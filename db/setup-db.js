@@ -35,15 +35,15 @@ db.serialize(() => {
 // });
 
 const insertarProducto = (producto) => {
-    const insert = db.run(`INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id) VALUES (?, ?, ?, ?)`,
+    db.run(`INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id) VALUES (?, ?, ?, ?)`,
         [producto.nombre, producto.precio, producto.fecha, producto.cliente], (err) => {
             if (err) {
-                return console.error('Error al insertar el producto:', err.message);
+                console.error('Error al insertar el producto:', err.message)
+                return false;
             }
             console.log('✅ Producto insertado correctamente.');
+            return true
         });
-
-    return insert;
 }
 
 module.exports = {

@@ -42,6 +42,7 @@ bot.onText(/\/buscar (.+)/, (msg, match) => {
 
 bot.on('callback_query', async (callbackQuery) => {
   const data = callbackQuery.data; // Este es el callback_data que definiste en los botones
+  const chatId = callbackQuery.message.chat.id;
 
   // Responde al callback para que el cliente de Telegram sepa que se procesó.
   bot.answerCallbackQuery(callbackQuery.id);
@@ -69,6 +70,10 @@ bot.on('callback_query', async (callbackQuery) => {
     });
 
     console.log(insert)
+
+    // if(insert){
+    bot.sendMessage(chatId, 'Se ingresó el producto correctamente.')
+    // }
   }
 
 });
