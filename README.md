@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # despencast
-=======
-# 24x7 Notificación
->>>>>>> 15af943 (First Commit)
 
 
 
@@ -19,22 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-<<<<<<< HEAD
-git remote add origin https://gitlab.hq3.cast.com.py/cperalta/despencast.git
-=======
 git remote add origin https://gitlab.hq3.cast.com.py/cperalta/24x7-notificacion.git
->>>>>>> 15af943 (First Commit)
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-<<<<<<< HEAD
-- [ ] [Set up project integrations](https://gitlab.hq3.cast.com.py/cperalta/despencast/-/settings/integrations)
-=======
 - [ ] [Set up project integrations](https://gitlab.hq3.cast.com.py/cperalta/24x7-notificacion/-/settings/integrations)
->>>>>>> 15af943 (First Commit)
 
 ## Collaborate with your team
 
