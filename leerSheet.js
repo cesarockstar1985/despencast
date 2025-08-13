@@ -63,8 +63,6 @@ const sheetLookUp = async (searchTerm = '') => {
     const { data } = await sheets.spreadsheets.values.get(spreadSheetValues);
     const rows = data.values;
 
-    console.log(rows)
-
     let formattedRows = await formatRows(rows)
 
     if(searchTerm !== '') {
@@ -82,7 +80,8 @@ const sheetLookUp = async (searchTerm = '') => {
 
 const formatRows = async (rows) => {
   const formattedRows = rows.map(row => {
-    const callbackText = row[0].toLowerCase().replace(/\s+/g, '_') + '_' + row[1].toLowerCase().replace(/\s+/g, '_');
+    let callbackText = row[0].toLowerCase().replace(/\s+/g, '_');
+    callbackText = callbackText.replace('\'', '');
     const text = `${row[0]}: ${row[1]}`;
     const callback_data = 'insertar_producto_' + callbackText;
 

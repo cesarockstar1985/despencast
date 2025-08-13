@@ -1,6 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const start = require('./controllers/telegram');
 const { leerSheet, sheetLookUp } = require('./leerSheet');
+const { insertarProducto } = require('./db/setup-db');
 
 require('dotenv').config();
 
@@ -53,12 +54,43 @@ bot.on('callback_query', async (callbackQuery) => {
   if(data.includes('insertar_producto_')){
     let producto = data.replace('insertar_producto_', '')
     producto = producto.replaceAll('_', ' ')
-    console.log(producto)
-    const productSheet = await sheetLookUp(producto);
+    const productSheetDataRaw = await sheetLookUp(producto);
+    const { text:productData } = productSheetDataRaw[0][0];
+    const productName = toTitleCase(productData.split(':')[0]);
+    const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace('.', ''));
+    const userId = callbackQuery.message.from.id;
+    const currentDate =  getCurrentDate();
     
+    const insert = insertarProducto({
+      nombre: productName,
+      precio: productPrice,
+      fecha: currentDate,
+      cliente: userId
+    });
+
+    console.log(insert)
   }
 
 });
+
+const toTitleCase = (str) => {
+  // 1. Convertimos todo a minúsculas y dividimos el string en un array de palabras.
+  return str.toLowerCase().split(' ').map(function(word) {
+    // 2. Para cada palabra, tomamos la primera letra, la ponemos en mayúscula
+    //    y la unimos con el resto de la palabra.
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' '); // 3. Unimos todas las palabras modificadas con un espacio en medio.
+}
+
+const getCurrentDate = () => {
+    // 1. Obtiene la fecha y hora actuales
+    const fechaActual = new Date();
+
+    // 2. La convierte a un string en formato ISO 8601
+    const fechaParaDB = fechaActual.toISOString();
+
+    return fechaParaDB
+}
 
 // 3. MENSAJE PARA SABER QUE EL SCRIPT ESTÁ CORRIENDO
 console.log('🤖 Bot iniciado. Esperando la hora programada para enviar notificaciones...');
