@@ -1,6 +1,10 @@
+const { consultarCuentaDb } = require('../db/setup-db');
+
 const start = (msg, bot) => {
   const chatId = msg.chat.id;
-  const texto = 'Hola 👋. Soy tu asistente de pedidos. ¿Qué te gustaría hacer?';
+  const name = msg.from.first_name;
+
+  const texto = `Hola ${name} 👋👋! Soy tu asistente de DespenCast. ¿Qué te gustaría hacer?`;
 
   // Opciones del teclado inline
   const opciones = {
@@ -9,7 +13,7 @@ const start = (msg, bot) => {
         [
           // Cada objeto es un botón. `text` es lo que ve el usuario, `callback_data` es lo que recibes tú.
           { text: '🍕 Ver Productos', callback_data: 'productos_precios' },
-          { text: '📦 Cuenta', callback_data: 'estado_pedido' }
+          { text: '📦 Cuenta', callback_data: 'estado_cuenta' }
         ]
       ]
     }
@@ -19,4 +23,30 @@ const start = (msg, bot) => {
   bot.sendMessage(chatId, texto, opciones);
 };
 
-module.exports = start;
+const consultarCuenta = (msg, bot) => {
+  const userId = msg.chat.id;
+  consultarCuentaDb(userId, (error, filas) => {
+        if (error) {
+        console.error("Hubo un error:", error.message);
+        return;
+    }
+    
+      // ¡Aquí sí tienes acceso a las filas!
+      const total = filas[0].total;
+      let text = '';
+
+      if (total != null){
+        text = `El total de la cuenta es: Gs. ${total}`
+      }
+      if(total == null){
+        text = 'No tienes cuenta pendiente';
+      }
+
+      bot.sendMessage(userId, text)
+    });
+}
+
+module.exports = {
+  start,
+  consultarCuenta
+};

@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const start = require('./controllers/telegram');
+const { start, consultarCuenta } = require('./controllers/telegram');
 const { leerSheet, sheetLookUp } = require('./leerSheet');
 const { insertarProducto } = require('./db/setup-db');
 
@@ -40,9 +40,14 @@ bot.onText(/\/buscar (.+)/, (msg, match) => {
   leerSheet(bot, searchTerm)
 });
 
+bot.onText(/\/cuenta/, (msg) => {
+  consultarCuenta(msg, bot)
+});
+
 bot.on('callback_query', async (callbackQuery) => {
   const data = callbackQuery.data; // Este es el callback_data que definiste en los botones
   const chatId = callbackQuery.message.chat.id;
+  const userId = callbackQuery.message.from.id;
 
   // Responde al callback para que el cliente de Telegram sepa que se procesó.
   bot.answerCallbackQuery(callbackQuery.id);
@@ -52,6 +57,21 @@ bot.on('callback_query', async (callbackQuery) => {
     leerSheet(bot)
   }
 
+  if(data === 'estado_cuenta'){
+    console.log(userId)
+    consultarCuenta(callbackQuery.message, bot)
+    // consultarCuenta(userId, (error, filas) => {
+    //     if (error) {
+    //     console.error("Hubo un error:", error.message);
+    //     return;
+    // }
+    
+    //   // ¡Aquí sí tienes acceso a las filas!
+    //   const total = filas[0].total;
+    //   bot.sendMessage(chatId, `El total de la cuenta es: Gs. ${total}`)
+    // });
+  }
+
   if(data.includes('insertar_producto_')){
     let producto = data.replace('insertar_producto_', '')
     producto = producto.replaceAll('_', ' ')
@@ -59,17 +79,14 @@ bot.on('callback_query', async (callbackQuery) => {
     const { text:productData } = productSheetDataRaw[0][0];
     const productName = toTitleCase(productData.split(':')[0]);
     const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace('.', ''));
-    const userId = callbackQuery.message.from.id;
     const currentDate =  getCurrentDate();
     
-    const insert = insertarProducto({
+    insertarProducto({
       nombre: productName,
       precio: productPrice,
       fecha: currentDate,
-      cliente: userId
+      cliente: chatId
     });
-
-    console.log(insert)
 
     // if(insert){
     bot.sendMessage(chatId, 'Se ingresó el producto correctamente.')

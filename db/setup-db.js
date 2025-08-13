@@ -46,6 +46,17 @@ const insertarProducto = (producto) => {
         });
 }
 
+const consultarCuentaDb = (cliente, callback) => {
+    db.all(`SELECT sum(precio_pedido) as total FROM pedidos WHERE cliente_id = ?`, [cliente],
+        (err, rows) => {
+        if (err) {
+            return callback(err, null);
+        }
+        callback(null, rows)
+    })
+}
+
 module.exports = {
-    insertarProducto
+    insertarProducto,
+    consultarCuentaDb
 }
