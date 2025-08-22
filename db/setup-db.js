@@ -11,12 +11,14 @@ const db = new sqlite3.Database('./despensa.db', (err) => {
 // db.serialize() asegura que los comandos se ejecuten en orden.
 db.serialize(() => {
     // 1. Crear la tabla de pedidos si no existe
+    // db.run('DROP TABLE IF EXISTS pedidos;'); 
     db.run(`CREATE TABLE IF NOT EXISTS pedidos (
         pedido_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre_producto TEXT NOT NULL,
         precio_pedido REAL NOT NULL,
         fecha_pedido TEXT NOT NULL,
-        cliente_id INTEGER NOT NULL
+        cliente_id INTEGER NOT NULL,
+        pagado INTEGER NOT NULL DEFAULT 0 CHECK(pagado IN (0, 1))
     )`, (err) => {
         if (err) {
             return console.error('Error al crear la tabla de pedidos:', err.message);
@@ -26,16 +28,8 @@ db.serialize(() => {
 
 });
 
-// Cerrar la conexión a la base de datos
-// db.close((err) => {
-//     if (err) {
-//         return console.error('Error al cerrar la base de datos:', err.message);
-//     }
-//     console.log('🛑 Conexión a la base de datos cerrada.');
-// });
-
 const insertarProducto = (producto) => {
-    db.run(`INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id) VALUES (?, ?, ?, ?)`,
+    db.run(`INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id, pagado) VALUES (?, ?, ?, ?, 0)`,
         [producto.nombre, producto.precio, producto.fecha, producto.cliente], (err) => {
             if (err) {
                 console.error('Error al insertar el producto:', err.message)
@@ -46,8 +40,17 @@ const insertarProducto = (producto) => {
         });
 }
 
-const consultarCuentaDb = (cliente, callback) => {
-    db.all(`SELECT sum(precio_pedido) as total FROM pedidos WHERE cliente_id = ?`, [cliente],
+const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
+    const query = `SELECT sum(precio_pedido) as total FROM pedidos WHERE cliente_id = ? AND pagado = 0 ${!isEmpty(dateObj) ? ' AND fecha_pedido BETWEEN ? AND ? ' : ''}`;
+
+    let whereVals = [cliente];
+
+    if(!isEmpty(dateObj)){
+        whereVals.push(dateObj.start.replace(' ', 'T'));
+        whereVals.push(dateObj.end.replace(' ', 'T'));
+    }
+
+    db.all(query, whereVals,
         (err, rows) => {
         if (err) {
             return callback(err, null);
@@ -56,7 +59,23 @@ const consultarCuentaDb = (cliente, callback) => {
     })
 }
 
+const pagarCuentaDb = (cliente, callback) => {
+    db.run(`UPDATE pedidos SET pagado = 1 WHERE cliente_id = ?`,
+        [cliente], (err) => {
+            if (err) {
+                return callback(err, null)
+            }
+            callback(null, true)
+        });
+}
+
+
+function isEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
+
 module.exports = {
     insertarProducto,
-    consultarCuentaDb
+    consultarCuentaDb,
+    pagarCuentaDb
 }

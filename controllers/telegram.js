@@ -1,4 +1,4 @@
-const { consultarCuentaDb } = require('../db/setup-db');
+const { consultarCuentaDb, pagarCuentaDb } = require('../db/setup-db');
 
 const start = (msg, bot) => {
   const chatId = msg.chat.id;
@@ -23,9 +23,9 @@ const start = (msg, bot) => {
   bot.sendMessage(chatId, texto, opciones);
 };
 
-const consultarCuenta = (msg, bot) => {
+const consultarCuenta = (msg, bot, dateObject = {}) => {
   const userId = msg.chat.id;
-  consultarCuentaDb(userId, (error, filas) => {
+  consultarCuentaDb(userId, dateObject, (error, filas) => {
         if (error) {
         console.error("Hubo un error:", error.message);
         return;
@@ -46,7 +46,23 @@ const consultarCuenta = (msg, bot) => {
     });
 }
 
+const pagarCuenta = async (msg, bot) => {
+  const userId = msg.chat.id;
+
+  pagarCuentaDb(userId, (error, result) => {
+    if(error)
+    {
+        console.error("Hubo un error:", error.message);
+        return;
+    }
+
+    bot.sendMessage(userId, 'El pago se ha realizado correctamente.')
+  });
+}
+
+
 module.exports = {
   start,
-  consultarCuenta
+  consultarCuenta,
+  pagarCuenta
 };
