@@ -36,12 +36,13 @@ bot.setMyCommands(misComandos)
 console.log('🤖 Bot de productos iniciado...');
 
 bot.onText(/\/catalogo/, (msg) => {
-  leerSheet(bot)
+  console.log(msg)
+  leerSheet(bot, msg)
 });
 
 bot.onText(/\/buscar (.+)/, (msg, match) => {
   const searchTerm = match[1];
-  leerSheet(bot, searchTerm)
+  leerSheet(bot, msg, searchTerm)
 });
 
 bot.onText(/\/cuenta/, (msg) => {
@@ -63,7 +64,7 @@ bot.on('callback_query', async (callbackQuery) => {
 
   // Lógica para manejar cada botón
   if (data === 'productos_precios') {
-    leerSheet(bot)
+    leerSheet(bot, msg)
   }
 
   if(data === 'estado_cuenta'){

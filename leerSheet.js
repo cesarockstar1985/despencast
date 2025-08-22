@@ -15,7 +15,9 @@ const authCredentials = {
     range: RANGO,
 }
 
-const leerSheet = async (bot, searchTerm = '') => {
+const leerSheet = async (bot, msg, searchTerm = '') => {
+  const chatId = msg.chat.id;
+
   console.log('Iniciando proceso...');
   try {
 
@@ -35,7 +37,7 @@ const leerSheet = async (bot, searchTerm = '') => {
 
       console.log('Enviando notificación a Telegram...');
      
-      await bot.sendMessage(CHAT_ID, mensaje, { parse_mode: 'Markdown', ...opciones });
+      await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
       
     } else {
       console.log('No se encontraron datos en el Sheet.');
@@ -44,7 +46,7 @@ const leerSheet = async (bot, searchTerm = '') => {
     console.error('Hubo un error en el proceso:', error.message);
     // Opcional: Notificar el error por Telegram
     try {
-      await bot.sendMessage(CHAT_ID, `❌ Hubo un error en el bot: ${error.message}`);
+      await bot.sendMessage(chatId, `❌ Hubo un error en el bot: ${error.message}`);
     } catch (telegramError) {
       console.error('Error al enviar la notificación de error:', telegramError.message);
     }
