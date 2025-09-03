@@ -52,7 +52,9 @@ const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
     // Consulta para los detalles de los productos
     const detailQuery = `SELECT
                             nombre_producto as nombre,
-                            precio_pedido as precio
+                            precio_pedido as precio,
+                            strftime('%d/%m/%Y', fecha_pedido, '-3 hours') as fecha,
+                            pagado
                         FROM pedidos
                         WHERE cliente_id = ? AND pagado = 0 ${!isEmpty(dateObj)
                             ? ' AND fecha_pedido BETWEEN ? AND ? '

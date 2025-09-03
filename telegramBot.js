@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { start, consultarCuenta, pagarCuenta } = require('./controllers/telegram');
+const { start, consultarCuenta, pagarCuenta, busquedaPorRango } = require('./controllers/telegram');
 const { leerSheet, sheetLookUp } = require('./leerSheet');
 const { insertarProducto } = require('./db/setup-db');
 
@@ -17,7 +17,8 @@ const misComandos = [
     { command: 'catalogo', description: 'Ver el catálogo interactivo de productos' },
     { command: 'buscar', description: 'Buscar un producto por su nombre' },
     { command: 'cuenta', description: 'Verificar cuenta' },
-    { command: 'rango', description: 'Verificar cuenta por rango de fecha' },
+    { command: 'rango_cuenta', description: 'Verificar cuenta por rango de fecha' },
+    { command: 'rango_detalle', description: 'Verificar detalle de compra' },
     { command: 'pagar', description: 'Marcar deuda como pagada' },
 ];
 
@@ -53,14 +54,37 @@ bot.onText(/\/pagar/, (msg) => {
   pagarCuenta(msg, bot)
 });
 
+bot.onText(/\/rango_cuenta/, (msg) => {
+   const chatId = msg.chat.id;
+  // Reiniciamos la selección para este usuario
+  userSelections[chatId] = { start: null, end: null };
+  
+  const today = new Date();
+  bot.sendMessage(chatId, 'Selecciona la fecha de **inicio**:', {
+    ...createRangeCalendar(today),
+    parse_mode: 'Markdown'
+  });
+});
+
 bot.on('callback_query', async (callbackQuery) => {
   const msg    = callbackQuery.message;
   const data   = callbackQuery.data; // Este es el callback_data que definiste en los botones
   const chatId = callbackQuery.message.chat.id;
-  const userId = callbackQuery.message.from.id;
 
   // Responde al callback para que el cliente de Telegram sepa que se procesó.
   bot.answerCallbackQuery(callbackQuery.id);
+
+  if(data === 'rango_cuenta'){
+     const chatId = msg.chat.id;
+    // Reiniciamos la selección para este usuario
+    userSelections[chatId] = { start: null, end: null };
+    
+    const today = new Date();
+    bot.sendMessage(chatId, 'Selecciona la fecha de **inicio**:', {
+      ...createRangeCalendar(today),
+      parse_mode: 'Markdown'
+    });
+  }
 
   // Lógica para manejar cada botón
   if (data === 'productos_precios') {
@@ -188,97 +212,6 @@ const getCurrentDate = () => {
 
     return fechaParaDB
 }
-
-bot.onText(/\/rango/, (msg) => {
-  const chatId = msg.chat.id;
-  // Reiniciamos la selección para este usuario
-  userSelections[chatId] = { start: null, end: null };
-  
-  const today = new Date();
-  bot.sendMessage(chatId, 'Selecciona la fecha de **inicio**:', {
-    ...createRangeCalendar(today),
-    parse_mode: 'Markdown'
-  });
-});
-
-// bot.on('callback_query', (callbackQuery) => {
-//   const msg = callbackQuery.message;
-//   const chatId = msg.chat.id;
-//   const data = callbackQuery.data;
-
-//   if (data === 'ignore') {
-//     bot.answerCallbackQuery(callbackQuery.id);
-//     return;
-//   }
-  
-//   // Si el usuario quiere limpiar la selección
-//   if (data === 'clear_selection') {
-//     userSelections[chatId] = { start: null, end: null };
-//     const today = new Date();
-//     bot.editMessageText('Selección reiniciada. Por favor, selecciona la fecha de **inicio**:', {
-//       chat_id: chatId,
-//       message_id: msg.message_id,
-//       ...createRangeCalendar(today),
-//       parse_mode: 'Markdown'
-//     });
-//     bot.answerCallbackQuery(callbackQuery.id);
-//     return;
-//   }
-
-//   // Manejar la selección de fechas
-//   if (data.startsWith('range_')) {
-//     const selectedDate = data.substring(6);
-    
-//     // Si aún no hay fecha de inicio, la establecemos
-//     if (!userSelections[chatId] || !userSelections[chatId].start) {
-//       userSelections[chatId] = { start: selectedDate, end: null };
-//       const today = new Date(selectedDate); // Mostramos el calendario del mes seleccionado
-      
-//       bot.editMessageText('✅ Fecha de inicio: `' + selectedDate + '`\n\nSelecciona la fecha de **fin**:', {
-//         chat_id: chatId,
-//         message_id: msg.message_id,
-//         ...createRangeCalendar(today, selectedDate),
-//         parse_mode: 'Markdown'
-//       });
-//     } else { // Si ya hay fecha de inicio, esta es la de fin
-//       const startDate = userSelections[chatId].start;
-//       const endDate = selectedDate;
-
-//       // Validación simple: la fecha de fin no puede ser anterior a la de inicio
-//       if (new Date(endDate) < new Date(startDate)) {
-//         bot.answerCallbackQuery(callbackQuery.id, { text: 'La fecha de fin no puede ser anterior a la de inicio.', show_alert: true });
-//         return;
-//       }
-      
-//       userSelections[chatId].end = endDate;
-      
-//       bot.editMessageText(`✅ Rango seleccionado:\n\n*Inicio:* \`${startDate}\`\n*Fin:* \`${endDate}\``, {
-//         chat_id: chatId,
-//         message_id: msg.message_id,
-//         parse_mode: 'Markdown'
-//       });
-      
-//       // Limpiamos el estado para este usuario
-//       delete userSelections[chatId];
-//     }
-    
-//     bot.answerCallbackQuery(callbackQuery.id);
-//   }
-
-//   // Manejar la navegación entre meses
-//   if (data.startsWith('nav_')) {
-//     const [year, month] = data.substring(4).split('-').map(Number);
-//     const newDate = new Date(year, month, 1);
-//     const startDate = userSelections[chatId] ? userSelections[chatId].start : null;
-    
-//     bot.editMessageReplyMarkup(createRangeCalendar(newDate, startDate).reply_markup, {
-//       chat_id: chatId,
-//       message_id: msg.message_id,
-//     }).catch(() => {});
-    
-//     bot.answerCallbackQuery(callbackQuery.id);
-//   }
-// });
 
 const createRangeCalendar = (date, startDate = null) => {
   const year = date.getFullYear();

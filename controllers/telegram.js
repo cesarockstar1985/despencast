@@ -13,7 +13,8 @@ const start = (msg, bot) => {
         [
           // Cada objeto es un botón. `text` es lo que ve el usuario, `callback_data` es lo que recibes tú.
           { text: '🍕 Ver Productos', callback_data: 'productos_precios' },
-          { text: '📦 Cuenta', callback_data: 'estado_cuenta' }
+          { text: '📦 Cuenta', callback_data: 'estado_cuenta' },
+          { text: '📅 Cuenta por Rango', callback_data: 'rango_cuenta' }
         ]
       ]
     }
@@ -36,19 +37,19 @@ const consultarCuenta = (msg, bot, dateObject = {}) => {
 
     // Encabezados de la grilla
     text += '```\n';
-    text += 'Nro.  Producto         Precio\n';
-    text += '------------------------------\n';
+    text += 'Nro.  Fecha         Producto         Precio\n';
+    text += '----------------------------------------------\n';
 
     if (productos.length > 0) {
       productos.forEach((producto, indice) => {
-        const { nombre, precio } = producto;
+        const { nombre, precio, fecha, pagado} = producto;
         
         // Formato para la fila de la grilla
         const numero = String(indice + 1).padEnd(5);
         const productoNombre = nombre.padEnd(15).substring(0, 15);
         const productoPrecio = 'Gs. ' + String(precio);
 
-        text += `${numero}${productoNombre} ${productoPrecio.padStart(8)}\n`;
+        text += `${numero} ${fecha}    ${productoNombre}  ${productoPrecio.padStart(8)}\n`;
       });
     }
 
@@ -78,8 +79,21 @@ const pagarCuenta = async (msg, bot) => {
   });
 }
 
+const busquedaPorRango = async (msg, bot, buscarPagados = false) => {
+  const chatId = msg.chat.id;
+  // Reiniciamos la selección para este usuario
+  userSelections[chatId] = { start: null, end: null };
+  
+  const today = new Date();
+  bot.sendMessage(chatId, 'Selecciona la fecha de **inicio**:', {
+    ...createRangeCalendar(today, buscarPagados),
+    parse_mode: 'Markdown'
+  });
+}
+
 module.exports = {
   start,
   consultarCuenta,
-  pagarCuenta
+  pagarCuenta,
+  busquedaPorRango
 };
