@@ -40,6 +40,7 @@ const leerSheet = async (bot, msg, searchTerm = '') => {
       await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
       
     } else {
+      await bot.sendMessage(chatId, `No se encontró el producto ${searchTerm}`);
       console.log('No se encontraron datos en el Sheet.');
     }
   } catch (error) {
