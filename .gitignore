@@ -1,4 +1,5 @@
 node_modules
 .env
 despensa.db
-.vscodesouthern-guild-*.json
+.vscode
+keys.json

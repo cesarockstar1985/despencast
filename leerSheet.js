@@ -3,7 +3,7 @@ const { google } = require('googleapis');
 require('dotenv').config();
 
 const { CREDENTIALS_PATH, SPREADSHEET_ID, CHAT_ID } = process.env
-const RANGO = 'Hoja 1!A1:B57';
+const RANGO = 'Hoja 1!A1:C67';
 
 const authCredentials = {
     keyFile: CREDENTIALS_PATH,
@@ -15,13 +15,13 @@ const authCredentials = {
     range: RANGO,
 }
 
-const leerSheet = async (bot, msg, searchTerm = '') => {
+const leerSheet = async (bot, msg, options = {}) => {
   const chatId = msg.chat.id;
 
   console.log('Iniciando proceso...');
   try {
 
-    const formattedRows = await sheetLookUp(searchTerm)
+    const formattedRows = await sheetLookUp(options)
 
     console.log('Datos leídos correctamente.');
 
@@ -54,25 +54,39 @@ const leerSheet = async (bot, msg, searchTerm = '') => {
   }
 }
 
-const sheetLookUp = async (searchTerm = '') => {
+const sheetLookUp = async (options = {}) => {
   try {
 
     // 1. AUTENTICACIÓN Y LECTURA DE GOOGLE SHEETS
     const auth = new google.auth.GoogleAuth(authCredentials);
     const sheets = google.sheets({ version: 'v4', auth });
 
+    const { searchTerm, isBarcode } = options;
+
     console.log('Obteniendo datos del Sheet...');
 
     const { data } = await sheets.spreadsheets.values.get(spreadSheetValues);
     const rows = data.values;
 
-    let formattedRows = await formatRows(rows)
+    let foundProduct;
+    const rowIndex = isBarcode ? 2 : 0;
 
-    if(searchTerm !== '') {
-      formattedRows = formattedRows.filter(row => {
-        return row[0].text.toLowerCase().includes(searchTerm.toLowerCase())
+    if(searchTerm !== ''){
+      foundProduct = rows.find(row => {
+        console.log(row)
+        return row[rowIndex].toLowerCase() === searchTerm.toLowerCase()
       })
     }
+
+    console.log(foundProduct)
+
+    let formattedRows = await formatRows(rows)
+
+    // if(searchTerm !== '') {
+    //   formattedRows = formattedRows.filter(row => {
+    //     return row[0].text.toLowerCase().includes(searchTerm.toLowerCase())
+    //   })
+    // }
 
     return formattedRows
 
@@ -82,16 +96,10 @@ const sheetLookUp = async (searchTerm = '') => {
 }
 
 const formatRows = async (rows) => {
-  const formattedRows = rows.map(row => {
-    let callbackText = row[0].toLowerCase().replace(/\s+/g, '_');
-    callbackText = callbackText.replace('\'', '');
-    const text = `${row[0]}: ${row[1]}`;
-    const callback_data = 'insertar_producto_' + callbackText;
+  const text = `${row[0]}: ${row[1]}`;
+  const callback_data = 'insertar_producto_' + callbackText;
 
-    return [{ text, callback_data }]
-  });
-
-  return formattedRows;
+  return [{ text, callback_data }]
 }
 
 module.exports = {
