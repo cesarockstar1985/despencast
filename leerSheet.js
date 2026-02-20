@@ -19,17 +19,19 @@ const authCredentials = {
 
 const leerSheet = async (bot, msg, options = {}) => {
   const chatId = msg.chat.id;
+  const { searchTerm } = options;
 
   console.log('Iniciando proceso...');
   try {
 
-    const formattedRows = await sheetLookUp(options)
+    const formattedRows = await sheetLookUp(options);
+    // const { productArr } = formattedRows;
 
     console.log('Datos leídos correctamente.');
 
     const opciones = {
         reply_markup: {
-            inline_keyboard: [formattedRows]
+            inline_keyboard: formattedRows
         }
     };
 
@@ -42,7 +44,7 @@ const leerSheet = async (bot, msg, options = {}) => {
       await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
       
     } else {
-      await bot.sendMessage(chatId, `No se encontró el producto ${searchTerm}`);
+      await bot.sendMessage(chatId, `No se encontró el producto ${searchTerm || ''}`);
       console.log('No se encontraron datos en el Sheet.');
     }
   } catch (error) {
@@ -70,36 +72,56 @@ const sheetLookUp = async (options = {}) => {
     const { data } = await sheets.spreadsheets.values.get(spreadSheetValues);
     const rows = data.values;
 
-    let foundProduct;
-    const rowIndex = isBarcode ? 2 : 0;
+    let productsToFormat = [];
 
-    if(searchTerm !== ''){
-      foundProduct = rows.find(row => {
-        return row[rowIndex].toLowerCase() === searchTerm.toLowerCase()
-      })
+    if (searchTerm) {
+      const rowIndex = isBarcode ? 2 : 0;
+      const found = rows.filter(row => {
+          // Aseguramos que la columna exista antes de procesar
+          if (!row[rowIndex]) return false;
+
+          const produName = row[0];
+          const targetValue = row[rowIndex].toString().toLowerCase();
+          const search = searchTerm.toLowerCase();
+
+          const matches = targetValue.includes(search);
+
+          if (matches) {
+              console.log(`¡Encontrado!: ${produName} (vía ${searchTerm})`);
+          }
+
+          return matches;
+      });
+
+      // Ahora 'foundProducts' es un Array [] con todas las filas que coincidieron
+      console.log(`Total de coincidencias: ${found.length}`);
+      
+      if (found) productsToFormat = found;
+    } else {
+      productsToFormat = rows;
     }
 
-    console.log(foundProduct)
+    if (!productsToFormat || productsToFormat.length === 0) return [];
 
-    let formattedRows = await formatRows(foundProduct)
-
-    return formattedRows
+    return formatRows(productsToFormat);
 
   }catch (error) {
     console.error('Hubo un error en el proceso:', error.message);
+    return [];
   }
 }
 
-const formatRows = async (row) => {
-  console.log(row)
-  // 1. Necesitas volver a generar callbackText para que callback_data funcione
+const formatRows = (rows) => {
+  return rows.map(row => formatSingleRow(row));
+};
+
+const formatSingleRow = (row) => {
   const callbackText = row[0].toLowerCase().replace(/\s+/g, '_').replace(/'/g, '');
-  
   const text = `${row[0]}: ${row[1]}`;
   const callback_data = 'insertar_producto_' + callbackText;
 
   return [{ text, callback_data }];
-};
+}
 
 module.exports = {
   leerSheet,

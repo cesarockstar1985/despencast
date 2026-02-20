@@ -156,7 +156,7 @@ bot.on('callback_query', async (callbackQuery) => {
     bot.answerCallbackQuery(callbackQuery.id);
 
     if (data === 'productos_precios') {
-        leerSheet(bot, msg);
+        leerSheet(bot, msg, {searchTerm: '', isBarcode: false});
     }
 
     if (data === 'estado_cuenta') {
@@ -165,7 +165,7 @@ bot.on('callback_query', async (callbackQuery) => {
 
     if (data.includes('insertar_producto_')) {
         let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
-        const productSheetDataRaw = await sheetLookUp(producto);
+        const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
         const { text: productData } = productSheetDataRaw[0][0];
         
         const productName = toTitleCase(productData.split(':')[0]);
