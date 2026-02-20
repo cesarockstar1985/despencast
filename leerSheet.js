@@ -2,11 +2,13 @@ const { google } = require('googleapis');
 
 require('dotenv').config();
 
-const { CREDENTIALS_PATH, SPREADSHEET_ID, CHAT_ID } = process.env
+const { GOOGLE_JSON_CONTENT, SPREADSHEET_ID } = process.env
 const RANGO = 'Hoja 1!A1:C67';
 
+const credentials = JSON.parse(GOOGLE_JSON_CONTENT);
+
 const authCredentials = {
-    keyFile: CREDENTIALS_PATH,
+    credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 };
 
