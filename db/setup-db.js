@@ -1,11 +1,14 @@
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 // El archivo de la base de datos. Se creará si no existe.
-const db = new sqlite3.Database('./despensa.db', (err) => {
-    if (err) {
-        return console.error('Error al abrir la base de datos:', err.message);
-    }
-    console.log('✅ Conectado a la base de datos SQLite.');
+const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
+    : path.resolve(__dirname, 'despensa.db');
+
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) return console.error('Error al abrir la base de datos:', err.message);
+    console.log(`✅ Base de datos conectada en: ${dbPath}`);
 });
 
 // db.serialize() asegura que los comandos se ejecuten en orden.
@@ -43,7 +46,7 @@ const insertarProducto = (producto) => {
 const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
     // Consulta para el resumen (suma total)
     const totalQuery = `SELECT
-                            SUM(precio_pedido) as total
+                            COALESCE(SUM(precio_pedido), 0) as total
                         FROM pedidos
                         WHERE cliente_id = ? AND pagado = 0 ${!isEmpty(dateObj)
                             ? ' AND fecha_pedido BETWEEN ? AND ? '
