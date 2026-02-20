@@ -31,17 +31,21 @@ db.serialize(() => {
 
 });
 
-const insertarProducto = (producto) => {
-    db.run(`INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id, pagado) VALUES (?, ?, ?, ?, 0)`,
-        [producto.nombre, producto.precio, producto.fecha, producto.cliente], (err) => {
+const insertarProducto = (producto, callback) => {
+    db.run(
+        `INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id, pagado) VALUES (?, ?, ?, ?, 0)`,
+        [producto.nombre, producto.precio, producto.fecha, producto.cliente],
+        function(err) { // Usamos function() para poder usar this.lastID si quisieras
             if (err) {
-                console.error('Error al insertar el producto:', err.message)
-                return false;
+                console.error('Error al insertar el producto:', err.message);
+                if (callback) callback(err);
+                return;
             }
             console.log('✅ Producto insertado correctamente.');
-            return true
-        });
-}
+            if (callback) callback(null, true);
+        }
+    );
+};
 
 const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
     // Consulta para el resumen (suma total)
