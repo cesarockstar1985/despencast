@@ -50,7 +50,7 @@ bot.onText(/\/start/, (msg) => start(msg, bot));
 bot.onText(/\/catalogo/, (msg) => leerSheet(bot, msg));
 
 bot.onText(/\/buscar (.+)/, (msg, match) => {
-    leerSheet(bot, msg, match[1]);
+    leerSheet(bot, msg, {searchTerm: match[1], isBarcode: false});
 });
 
 bot.onText(/\/cuenta/, (msg) => consultarCuenta(msg, bot));

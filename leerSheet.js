@@ -29,7 +29,7 @@ const leerSheet = async (bot, msg, options = {}) => {
 
     const opciones = {
         reply_markup: {
-            inline_keyboard: formattedRows
+            inline_keyboard: [formattedRows]
         }
     };
 
@@ -75,20 +75,13 @@ const sheetLookUp = async (options = {}) => {
 
     if(searchTerm !== ''){
       foundProduct = rows.find(row => {
-        console.log(row)
         return row[rowIndex].toLowerCase() === searchTerm.toLowerCase()
       })
     }
 
     console.log(foundProduct)
 
-    let formattedRows = await formatRows(rows)
-
-    // if(searchTerm !== '') {
-    //   formattedRows = formattedRows.filter(row => {
-    //     return row[0].text.toLowerCase().includes(searchTerm.toLowerCase())
-    //   })
-    // }
+    let formattedRows = await formatRows(foundProduct)
 
     return formattedRows
 
@@ -97,12 +90,16 @@ const sheetLookUp = async (options = {}) => {
   }
 }
 
-const formatRows = async (rows) => {
+const formatRows = async (row) => {
+  console.log(row)
+  // 1. Necesitas volver a generar callbackText para que callback_data funcione
+  const callbackText = row[0].toLowerCase().replace(/\s+/g, '_').replace(/'/g, '');
+  
   const text = `${row[0]}: ${row[1]}`;
   const callback_data = 'insertar_producto_' + callbackText;
 
-  return [{ text, callback_data }]
-}
+  return [{ text, callback_data }];
+};
 
 module.exports = {
   leerSheet,
