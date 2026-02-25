@@ -191,3 +191,5 @@ const toTitleCase = (str) => {
 };
 
 console.log('🤖 Bot de productos iniciado con éxito...');
+
+module.exports = bot;
