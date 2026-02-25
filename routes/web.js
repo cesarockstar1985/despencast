@@ -25,4 +25,27 @@ router.get('/dashboard', (req, res) => {
     });
 });
 
+router.get('/clientes', (req, res) => {
+    const sqlite3 = require('sqlite3').verbose();
+    const path = require('path');
+    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
+        ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
+        : path.resolve(__dirname, '../db/despensa.db');
+    
+    const db = new sqlite3.Database(dbPath);
+
+    // Consultamos los clientes y, de paso, cuánto debe cada uno (opcional pero pro)
+    const query = `
+        SELECT c.*, IFNULL(SUM(CASE WHEN p.pagado = 0 THEN p.precio_pedido ELSE 0 END), 0) as deuda_actual
+        FROM clientes c
+        LEFT JOIN pedidos p ON c.telegram_id = p.cliente_id
+        GROUP BY c.telegram_id
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) return res.status(500).send("Error al cargar clientes");
+        res.render('clientes.ejs', { clientes: rows });
+    });
+});
+
 module.exports = router;

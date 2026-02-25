@@ -13,7 +13,7 @@ const {
 
 const { start, consultarCuenta, pagarCuenta } = require('./controllers/telegram');
 const { leerSheet, sheetLookUp } = require('./leerSheet');
-const { insertarProducto } = require('./db/setup-db');
+const { insertarProducto, obtenerCliente} = require('./db/setup-db');
 
 require('dotenv').config();
 
@@ -184,8 +184,25 @@ bot.on('callback_query', async (callbackQuery) => {
     // (Aquí puedes añadir el resto de tu lógica de calendario/rango_cuenta...)
 });
 
-// --- Utilidades ---
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id.toString();
+    const text = msg.text;
 
+    // 1. Chequeamos si el usuario existe
+    const cliente = await obtenerCliente(chatId);
+
+    if (!cliente) {
+        // Caso: Usuario NO registrado
+        if (text === '/start') {
+            bot.sendMessage(chatId, `¡Hola! Soy el sistema de DespenCast. Veo que no estás registrado. Por favor, pedile al dueño de la despensa que te dé de alta con este id \`${chatId}\` para empezar a usar el bot.`, { parse_mode: 'Markdown' });
+        } else {
+            bot.sendMessage(chatId, "⚠️ Acceso denegado. Tu usuario no está registrado en el sistema.");
+        }
+        return; // Detenemos la ejecución aquí
+    }
+});
+
+// --- Utilidades ---
 const toTitleCase = (str) => {
     return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };

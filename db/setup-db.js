@@ -29,6 +29,18 @@ db.serialize(() => {
         console.log('📄 Tabla "pedidos" creada o ya existente.');
     });
 
+    db.run(`CREATE TABLE IF NOT EXISTS clientes (
+        telegram_id TEXT PRIMARY KEY, -- Su ID de Telegram para reconocerlo
+        nombre_completo TEXT,
+        alias TEXT,                   -- Por si le dicen "Juanchi"
+        limite_credito REAL DEFAULT 200000, 
+        fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`, (err) => {
+        if (err) {
+            return console.error('Error al crear la tabla de usuarios:', err.message);
+        }
+        console.log('📄 Tabla "usuarios" creada o ya existente.');
+    });
 });
 
 const insertarProducto = (producto, callback) => {
@@ -100,6 +112,16 @@ const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
     });
 };
 
+const obtenerCliente = (telegram_id) => {
+    return new Promise((resolve, reject) => {
+        const query = `SELECT * FROM clientes WHERE telegram_id = ?`;
+        db.get(query, [telegram_id], (err, row) => {
+            if (err) reject(err);
+            resolve(row); // Retorna el objeto del cliente o 'undefined' si no existe
+        });
+    });
+}
+
 const pagarCuentaDb = (cliente, callback) => {
     db.run(`UPDATE pedidos SET pagado = 1 WHERE cliente_id = ?`,
         [cliente], (err) => {
@@ -118,5 +140,6 @@ function isEmpty(obj) {
 module.exports = {
     insertarProducto,
     consultarCuentaDb,
-    pagarCuentaDb
+    pagarCuentaDb,
+    obtenerCliente
 }
