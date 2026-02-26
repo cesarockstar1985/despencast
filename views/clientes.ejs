@@ -8,52 +8,64 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
-        .table-container { background: white; border-radius: 12px; padding: 25px; shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .nav-link.active { font-weight: bold; color: #007bff !important; }
+        .sidebar { background: #1a1a2e; color: white; min-height: 100vh; }
+        .card-stats { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .card-stats:hover { transform: translateY(-5px); }
+        .table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .status-badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; }
+        .text-primary-custom { color: #4e73df; }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <nav class="nav mb-4">
-            <a class="nav-link text-muted" href="/dashboard">📊 Dashboard</a>
-            <a class="nav-link active" href="/clientes">👥 Clientes</a>
-        </nav>
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Gestión de Clientes</h2>
-            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCliente">+ Nuevo Cliente</button>
-        </div>
-
-        <div class="table-container shadow-sm">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Nombre / Alias</th>
-                        <th>Telegram ID</th>
-                        <th>Límite de Crédito</th>
-                        <th>Deuda Actual</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% clientes.forEach(c => { %>
-                    <tr>
-                        <td>
-                            <strong><%= c.nombre_completo %></strong><br>
-                            <small class="text-muted">@<%= c.alias %></small>
-                        </td>
-                        <td><code><%= c.telegram_id %></code></td>
-                        <td>Gs. <%= c.limite_credito.toLocaleString('es-PY') %></td>
-                        <td class="<%= c.deuda_actual > c.limite_credito ? 'text-danger fw-bold' : '' %>">
-                            Gs. <%= c.deuda_actual.toLocaleString('es-PY') %>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">Editar</button>
-                        </td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 d-none d-md-block sidebar p-4">
+                <h4 class="mb-4">DespenCast</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link text-white-50" href="/">🏠 Resumen</a>
+                    <a class="nav-link text-white active" href="/clientes">👥 Clientes</a>
+                    <a class="nav-link text-white-50" href="#">💰 Pagos</a>
+                </nav>
+            </div>
+            <main class="col-md-10 p-4">
+                <header class="d-flex justify-content-between align-items-center mb-5">
+                    <div>
+                        <h2 class="fw-bold">Gestión de Clientes</h2>
+                    </div>
+                </header>
+            
+                <div class="table-container shadow-sm">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre / Alias</th>
+                                <th>Telegram ID</th>
+                                <th>Límite de Crédito</th>
+                                <th>Deuda Actual</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% clientes.forEach(c => { %>
+                            <tr>
+                                <td>
+                                    <strong><%= c.nombre_completo %></strong><br>
+                                    <small class="text-muted">@<%= c.alias %></small>
+                                </td>
+                                <td><code><%= c.telegram_id %></code></td>
+                                <td>Gs. <%= c.limite_credito.toLocaleString('es-PY') %></td>
+                                <td class="<%= c.deuda_actual > c.limite_credito ? 'text-danger fw-bold' : '' %>">
+                                    Gs. <%= c.deuda_actual.toLocaleString('es-PY') %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
         </div>
     </div>
 
