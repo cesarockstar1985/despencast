@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { consultarCuentaDb } = require('../db/setup-db'); 
 
-router.get('/dashboard', (req, res) => {
+router.get('/', (req, res) => {
     // Aquí puedes crear una consulta general en setup-db 
     // o usar la lógica que ya tenemos para listar deudores
     // Por ahora, simulamos la llamada:
