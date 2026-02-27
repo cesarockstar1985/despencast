@@ -52,6 +52,9 @@
                         </td>
                     </tr>
                     <% }) %>
+                    <% if (clientes.lenght  === 0) { %>
+                        <span class="text-danger fw-bold">⚠️ EXCEDIDO</span>
+                    <% } %>
                 </tbody>
             </table>
         </div>

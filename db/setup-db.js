@@ -1,3 +1,4 @@
+require('dotenv').config(); // Carga las variables de tu .env local
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
@@ -5,6 +6,8 @@ const path = require('path');
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
     ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
     : path.resolve(__dirname, 'despensa.db');
+
+    console.log(process.env.RAILWAY_VOLUME_MOUNT_PATH)
 
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) return console.error('Error al abrir la base de datos:', err.message);

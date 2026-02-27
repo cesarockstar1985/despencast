@@ -13,8 +13,6 @@ router.get('/dashboard', (req, res) => {
         ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
         : path.resolve(__dirname, '../db/despensa.db');
     
-    console.log(dbPath);
-
     const db = new sqlite3.Database(dbPath);
 
     db.all(`SELECT * FROM pedidos WHERE pagado = 0`, [], (err, rows) => {
@@ -46,6 +44,23 @@ router.get('/clientes', (req, res) => {
         if (err) return res.status(500).send("Error al cargar clientes");
         res.render('clientes.ejs', { clientes: rows });
     });
+});
+
+router.get('/clientes/nuevo', (req, res) => {
+    res.render('nuevo-cliente.ejs');
+});
+
+// Acción de guardar el cliente (POST)
+router.post('/clientes/guardar', async (req, res) => {
+    const { telegram_id, nombre, alias, limite } = req.body;
+    
+    try {
+        await registrarCliente(telegram_id, nombre, alias, parseFloat(limite));
+        // Redireccionamos a la lista de clientes con un mensaje de éxito
+        res.redirect('/clientes?mensaje=registrado');
+    } catch (error) {
+        res.status(500).send("Error al guardar el cliente: " + error.message);
+    }
 });
 
 module.exports = router;
