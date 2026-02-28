@@ -1,6 +1,6 @@
 // index.js
 const express = require('express');
-const bot = require('./telegramBot'); // <-- Esto ya enciende el bot al ejecutarse
+const bot = require('./bot');
 const webRoutes = require('./routes/web');
 
 const app = express();

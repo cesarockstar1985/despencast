@@ -1,15 +1,4 @@
 const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
-const { Jimp } = require('jimp'); // Asegúrate de tener la v1.x o superior
-const { 
-    MultiFormatReader, 
-    BarcodeFormat, 
-    DecodeHintType, 
-    RGBLuminanceSource, 
-    BinaryBitmap, 
-    HybridBinarizer,
-    GlobalHistogramBinarizer 
-} = require('@zxing/library');
 
 const { start, consultarCuenta, pagarCuenta } = require('./controllers/telegram');
 const { leerSheet, sheetLookUp } = require('./leerSheet');
@@ -21,7 +10,6 @@ const { TELEGRAM_TOKEN } = process.env;
 
 // Estado para saber si estamos esperando una foto
 const waitingForBarcode = new Set();
-const userSelections = {};
 
 // Inicializa el bot de Telegram
 const bot = new TelegramBot(TELEGRAM_TOKEN, {
@@ -64,90 +52,38 @@ bot.onText(/\/barcode/, (msg) => {
 });
 
 // --- Lógica de Procesamiento de Imagen ---
-
 bot.on('photo', async (msg) => {
     const chatId = msg.chat.id;
 
+    // 1. Validación de estado
     if (!waitingForBarcode.has(chatId)) return;
     
-    waitingForBarcode.delete(chatId);
-    const photo = msg.photo[msg.photo.length - 1];
-
     try {
-        bot.sendMessage(chatId, '🔍 Procesando imagen...');
+        const photo = msg.photo[msg.photo.length - 1];
+        await bot.sendMessage(chatId, '🔍 Procesando imagen...');
 
-        // 1. Descarga con Axios forzando IPv4 y Timeout
+        // 2. Delegamos la lógica pesada al servicio
         const fileLink = await bot.getFileLink(photo.file_id);
-        const response = await axios.get(fileLink, {
-            responseType: 'arraybuffer',
-            timeout: 20000,
-            family: 4
-        });
+        const code = await BarcodeService.decodeFromUrl(fileLink);
 
-        // 2. Procesamiento con Jimp (Sintaxis v1.x)
-        const image = await Jimp.read(Buffer.from(response.data));
+        // 3. Éxito: Limpiamos estado y buscamos en el sheet
+        waitingForBarcode.delete(chatId);
+        bot.sendMessage(chatId, `✅ ¡Código detectado: \`${code}\`!\n🔍 Buscando producto...`, { parse_mode: 'Markdown' });
         
-        image.resize({ w: 800 }); // Tamaño ideal para balancear velocidad/detalle
-        image.greyscale();
-        image.contrast(0.8);
-        image.normalize();
-
-        // 3. Preparar datos para ZXing (Extracción manual de luminancia)
-        const width = image.bitmap.width;
-        const height = image.bitmap.height;
-        const data = image.bitmap.data;
-        const lumaBuffer = new Uint8ClampedArray(width * height);
-
-        for (let i = 0; i < data.length; i += 4) {
-            // Fórmula de luminancia: (R+G+B)/3
-            lumaBuffer[i / 4] = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-
-        const luminanceSource = new RGBLuminanceSource(lumaBuffer, width, height);
-        const hints = new Map();
-        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-            BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, 
-            BarcodeFormat.CODE_128, BarcodeFormat.UPC_A, BarcodeFormat.QR_CODE
-        ]);
-        hints.set(DecodeHintType.TRY_HARDER, true);
-
-        const reader = new MultiFormatReader();
-        let result = null;
-
-        // 4. Triple Intento de lectura
-        try {
-            // Intento 1: Hybrid (Estándar)
-            result = reader.decode(new BinaryBitmap(new HybridBinarizer(luminanceSource)), hints);
-        } catch (e) {
-            try {
-                // Intento 2: Global Histogram (Mejor para fotos con sombras)
-                result = reader.decode(new BinaryBitmap(new GlobalHistogramBinarizer(luminanceSource)), hints);
-            } catch (e2) {
-                // Intento 3: Invertir colores (Códigos claros sobre fondo oscuro)
-                luminanceSource.invert();
-                result = reader.decode(new BinaryBitmap(new HybridBinarizer(luminanceSource)), hints);
-            }
-        }
-
-        if (result) {
-            const code = result.getText();
-            bot.sendMessage(chatId, `✅ ¡Código detectado: \`${code}\`!\n🔍 Buscando producto...`, { parse_mode: 'Markdown' });
-            // Llamada a tu función de búsqueda en Google Sheets
-            leerSheet(bot, msg, {searchTerm: code, isBarcode: true});
-        }
+        leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
 
     } catch (error) {
-        if (error.name === 'NotFoundException' || error.message.includes('No MultiFormat')) {
+        // 4. Manejo de errores específicos
+        if (error.message === 'NOT_FOUND') {
             bot.sendMessage(chatId, '❌ No se pudo detectar el código. Intenta con más luz y evita reflejos.');
         } else {
-            console.error('Error:', error);
+            console.error('Error en procesamiento:', error);
             bot.sendMessage(chatId, '❌ Error técnico al procesar la imagen.');
         }
     }
 });
 
 // --- Manejo de Callbacks (Calendario y Botones) ---
-
 bot.on('callback_query', async (callbackQuery) => {
     const msg = callbackQuery.message;
     const data = callbackQuery.data;
