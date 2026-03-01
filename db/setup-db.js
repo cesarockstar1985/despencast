@@ -7,8 +7,6 @@ const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
     ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
     : path.resolve(__dirname, 'despensa.db');
 
-    console.log(process.env.RAILWAY_VOLUME_MOUNT_PATH)
-
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) return console.error('Error al abrir la base de datos:', err.message);
     console.log(`✅ Base de datos conectada en: ${dbPath}`);
@@ -144,5 +142,6 @@ module.exports = {
     insertarProducto,
     consultarCuentaDb,
     pagarCuentaDb,
-    obtenerCliente
+    obtenerCliente,
+    db
 }

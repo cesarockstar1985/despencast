@@ -1,6 +1,7 @@
 // routes/web.js
 const express = require('express');
 const router = express.Router();
+const { registrarCliente } = require('../controllers/clients');
 const { consultarCuentaDb } = require('../db/setup-db'); 
 
 router.get('/', (req, res) => {
@@ -17,7 +18,6 @@ router.get('/', (req, res) => {
 
     db.all(`SELECT * FROM pedidos WHERE pagado = 0`, [], (err, rows) => {
         if (err) return res.status(500).send("Error en DB");
-        console.log(rows)
         const total = rows.reduce((sum, r) => sum + r.precio_pedido, 0);
         res.render('index.ejs', { pedidos: rows, totalDeuda: total });
     });
@@ -42,24 +42,24 @@ router.get('/clientes', (req, res) => {
 
     db.all(query, [], (err, rows) => {
         if (err) return res.status(500).send("Error al cargar clientes");
-        res.render('clientes.ejs', { clientes: rows });
+        res.render('clients.ejs', { clientes: rows });
     });
 });
 
-router.get('/clientes/nuevo', (req, res) => {
-    res.render('nuevo-cliente.ejs');
+router.get('/clientes/create', (req, res) => {
+    res.render('new-client.ejs');
 });
 
 // Acción de guardar el cliente (POST)
 router.post('/clientes/guardar', async (req, res) => {
-    const { telegram_id, nombre, alias, limite } = req.body;
+    console.log(req.body)
+    const { telegramId, name } = req.body;
     
     try {
-        await registrarCliente(telegram_id, nombre, alias, parseFloat(limite));
-        // Redireccionamos a la lista de clientes con un mensaje de éxito
-        res.redirect('/clientes?mensaje=registrado');
+        await registrarCliente(telegramId, name);
+        res.json({ success: true, message: 'Cliente registrado correctamente' });
     } catch (error) {
-        res.status(500).send("Error al guardar el cliente: " + error.message);
+        res.status(400).json({ success: false, message: "Error al guardar el cliente: " + error.message });
     }
 });
 

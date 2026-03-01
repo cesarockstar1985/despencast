@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DespenCast | Nuevo Cliente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #1a1a2e; color: white; min-height: 100vh; }
+        .card-stats { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .card-stats:hover { transform: translateY(-5px); }
+        .table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .status-badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; }
+        .text-primary-custom { color: #4e73df; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 d-none d-md-block sidebar p-4">
+            <h4 class="mb-4">DespenCast</h4>
+            <nav class="nav flex-column">
+                <a class="nav-link text-white-50" href="/">🏠 Resumen</a>
+                <a class="nav-link text-white active" href="/clientes">👥 Clientes</a>
+                <a class="nav-link text-white-50" href="#">💰 Pagos</a>
+            </nav>
+        </div>
+        <main class="col-md-10 p-5">
+            <header class="mb-4">
+                <h2 class="fw-bold">Gestión de Clientes</h2>
+            </header>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-container">
+                        <h5 class="fw-bold mb-4">Información del Cliente</h5>
+                        
+                        <form action="/clientes/guardar" method="POST">
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">ID de Telegram</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">@</span>
+                                    <input type="text" name="telegramId" class="form-control" placeholder="Ej: 123456789" required>
+                                </div>
+                                <div class="form-text mt-2 text-info">
+                                    💡 Indispensable para que el bot lo reconozca.
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Nombre Completo</label>
+                                <input type="text" name="name" class="form-control" placeholder="Ej: Juan Pérez" required>
+                            </div>
+
+                            <!-- <div class="mb-4">
+                                <label class="form-label fw-semibold">Alias o Apodo (Opcional)</label>
+                                <input type="text" name="alias" class="form-control" placeholder="Ej: Juanchi">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Límite de Crédito (Gs.)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">Gs.</span>
+                                    <input type="number" name="limite" class="form-control" value="200000" required>
+                                </div>
+                            </div> -->
+
+                            <div class="d-flex gap-3 pt-4 border-top">
+                                <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                    ✅ Guardar Cliente
+                                </button>
+                                <a href="/clientes" class="btn btn-outline-secondary px-4">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-2">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary">¿Por qué registrar un cliente?</h6>
+                            <p class="small text-muted mt-2">
+                                Al registrar a un cliente, el bot podrá identificar automáticamente sus deudas y enviarle notificaciones de sus pagos realizados. 
+                            </p>
+                            <hr class="text-muted">
+                            <ul class="small text-muted ps-3">
+                                <li class="mb-2">Control exacto de montos fiados.</li>
+                                <li class="mb-2">Historial de compras centralizado.</li>
+                                <li>Seguridad en el acceso al bot.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form'); // O usa document.getElementById('formCrearCliente') si le pusiste ID
+    
+    if (form) {
+        saveClientReq()
+    }
+
+    function saveClientReq() {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página se refresque
+            
+            const formData = new FormData(form);
+            // Convertimos FormData a un objeto simple
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/clientes/guardar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Éxito: Mostrar mensaje y limpiar formulario
+                    alert('✅ ' + result.message);
+                    form.reset();
+                    // Opcional: Redirigir manualmente si quieres
+                    // window.location.href = '/clientes';
+                } else {
+                    // Error: Mostrar mensaje de error
+                    const confirmSave = confirm('❌ ' + result.message);
+
+                    if(confirmSave){
+                        saveClientReq();
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Ocurrió un error inesperado.');
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>

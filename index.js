@@ -6,7 +6,8 @@ const webRoutes = require('./routes/web');
 const app = express();
 
 // ... resto de la configuración de Express ...
-
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/', webRoutes);
 
 const PORT = process.env.PORT || 3000;

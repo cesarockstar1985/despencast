@@ -24,85 +24,36 @@ const withAuth = async (msg, callback) => {
     return callback();
 };
 
-// Comandos del bot
-const misComandos = [
-    { command: 'start', description: 'Menú principal' },
-    { command: 'barcode', description: 'Escanear código de barras' },
-    { command: 'catalogo', description: 'Ver el catálogo de productos' },
-    { command: 'buscar', description: 'Buscar producto por nombre' },
-    { command: 'cuenta', description: 'Verificar cuenta' },
-    { command: 'pagar', description: 'Marcar deuda como pagada' },
-];
-
-bot.setMyCommands(misComandos);
-
 // --- Manejadores de Comandos ---
 bot.onText(/\/start/, (msg) => withAuth(msg, () => Actions.handleStart(bot, msg)));
-
 bot.onText(/\/barcode/, (msg) => withAuth(msg, () => Actions.handleBarcodeRequest(bot, msg, waitingForBarcode)));
-
 bot.onText(/\/catalogo/, (msg) => withAuth(msg, () => leerSheet(bot, msg)));
-
 bot.onText(/\/buscar (.+)/, (msg, match) => withAuth(msg, () => Actions.handleSearch(bot, msg, match)));
-
 bot.onText(/\/cuenta/, (msg) => withAuth(msg, () => consultarCuenta(msg, bot)));
-
 bot.onText(/\/pagar/, (msg) => withAuth(msg, () => pagarCuenta(msg, bot)));
 
 // --- Procesamiento de Imagen ---
 bot.on('photo', async (msg) => {
-    if (!waitingForBarcode.has(msg.chat.id)) return;
+    await withAuth(msg, async () => {
+        try {
+            const photo = msg.photo[msg.photo.length - 1];
+            const fileLink = await bot.getFileLink(photo.file_id);
+            
+            bot.sendMessage(msg.chat.id, '🔍 Procesando...');
+            const code = await decodeBarcode(fileLink);
+            
+            waitingForBarcode.delete(msg.chat.id);
+            bot.sendMessage(msg.chat.id, `✅ Código: \`${code}\``, { parse_mode: 'Markdown' });
+            leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
 
-    try {
-        const photo = msg.photo[msg.photo.length - 1];
-        const fileLink = await bot.getFileLink(photo.file_id);
-        
-        bot.sendMessage(msg.chat.id, '🔍 Procesando...');
-        const code = await decodeBarcode(fileLink);
-        
-        waitingForBarcode.delete(msg.chat.id);
-        bot.sendMessage(msg.chat.id, `✅ Código: \`${code}\``, { parse_mode: 'Markdown' });
-        leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
-
-    } catch (error) {
-        Actions.sendError(bot, msg.chat.id, error.message === 'NOT_FOUND' ? 'image' : 'tech');
-    }
+        } catch (error) {
+            Actions.sendError(bot, msg.chat.id, error.message === 'NOT_FOUND' ? 'image' : 'tech');
+        }
+    });
 });
 
 // --- Manejo de Callbacks (Calendario y Botones) ---
-// bot.on('callback_query', async (callbackQuery) => {
-//     const msg = callbackQuery.message;
-//     const data = callbackQuery.data;
-//     const chatId = msg.chat.id;
-
-//     bot.answerCallbackQuery(callbackQuery.id);
-
-//     if (data === 'productos_precios') {
-//         leerSheet(bot, msg, {searchTerm: '', isBarcode: false});
-//     }
-
-//     if (data === 'estado_cuenta') {
-//         consultarCuenta(msg, bot);
-//     }
-
-//     if (data.includes('insertar_producto_')) {
-//         let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
-//         const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
-//         const { text: productData } = productSheetDataRaw[0][0];
-        
-//         const productName = toTitleCase(productData.split(':')[0]);
-//         const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace(/\./g, ''));
-        
-//         insertarProducto({
-//             nombre: productName,
-//             precio: productPrice,
-//             fecha: new Date().toISOString(),
-//             cliente: chatId
-//         });
-
-//         bot.sendMessage(chatId, `✅ Registrado: ${productName}`);
-//     } 
-// });
+bot.on('callback_query', (query) => withAuth(query.message, () => Actions.handleCallback(bot, query)));
 
 // --- Utilidades ---
 const toTitleCase = (str) => {
