@@ -32,6 +32,14 @@ db.serialize(() => {
         pagado INTEGER NOT NULL DEFAULT 0 CHECK(pagado IN (0, 1)),
         FOREIGN KEY (cliente_id) REFERENCES clientes(telegram_id)
     )`);
+
+    // Dentro de db.serialize() en tu conexion.js
+    db.run(`CREATE TABLE IF NOT EXISTS admin_users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT, -- Aquí guardaremos el hash, no texto plano
+        role TEXT DEFAULT 'admin'
+    )`);
 });
 
 module.exports = db; // Exportamos solo la conexión

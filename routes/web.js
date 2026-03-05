@@ -1,10 +1,17 @@
+const authMiddleware = require('../middlewares/authMiddleware');
+const authController = require('../controllers/auth');
 // routes/web.js
 const express = require('express');
 const router = express.Router();
 const { registrarCliente } = require('../controllers/clients');
 const { consultarCuentaDb } = require('../db/setup-db'); 
+const { auth } = require('googleapis/build/src/apis/abusiveexperiencereport');
 
-router.get('/', (req, res) => {
+router.get('/login', authController.showLogin);
+router.post('/login', authController.processLogin);
+router.get('/logout', authController.logout);
+
+router.get('/', authMiddleware, (req, res) => {
     // Aquí puedes crear una consulta general en setup-db 
     // o usar la lógica que ya tenemos para listar deudores
     // Por ahora, simulamos la llamada:
@@ -24,7 +31,7 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/clientes', (req, res) => {
+router.get('/clientes', authMiddleware, (req, res) => {
     const sqlite3 = require('sqlite3').verbose();
     const path = require('path');
     const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
@@ -47,7 +54,7 @@ router.get('/clientes', (req, res) => {
     });
 });
 
-router.get('/clientes/create', (req, res) => {
+router.get('/clientes/create', authMiddleware, (req, res) => {
     res.render('new-client.ejs');
 });
 
