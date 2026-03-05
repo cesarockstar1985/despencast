@@ -76,7 +76,7 @@
                                 <tr>
                                     <td class="text-muted small"><%= p.fecha_pedido.split('T')[0] %></td>
                                     <td>
-                                        <div class="fw-bold text-dark">Usuario #<%= p.cliente_id %></div>
+                                        <div class="fw-bold text-dark"><%= p.nombre_completo %></div>
                                     </td>
                                     <td><%= p.nombre_producto %></td>
                                     <td class="text-end fw-bold">Gs. <%= p.precio_pedido.toLocaleString('es-PY') %></td>

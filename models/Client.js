@@ -24,6 +24,17 @@ const Cliente = {
         });
     },
 
+    updateByName: (datos) => {
+        return new Promise((resolve, reject) => {
+            const { telegram_id, nombre } = datos;
+            const sql = `update clientes set telegram_id = ? where nombre_completo = ?`;
+            db.run(sql, [telegram_id, nombre], function(err) {
+                if (err) reject(err);
+                resolve(this.lastID);
+            });
+        });
+    },
+
     getByTelegramId: (telegramId) => {
         return new Promise((resolve, reject) => {
             const sql = "SELECT * FROM clientes WHERE telegram_id = ?";

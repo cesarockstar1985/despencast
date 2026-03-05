@@ -16,9 +16,10 @@ router.get('/', (req, res) => {
     
     const db = new sqlite3.Database(dbPath);
 
-    db.all(`SELECT * FROM pedidos WHERE pagado = 0`, [], (err, rows) => {
+    db.all(`SELECT * FROM pedidos p left join clientes c on p.cliente_id = c.telegram_id WHERE p.pagado = 0`, [], (err, rows) => {
         if (err) return res.status(500).send("Error en DB");
         const total = rows.reduce((sum, r) => sum + r.precio_pedido, 0);
+        console.log(rows)
         res.render('index.ejs', { pedidos: rows, totalDeuda: total });
     });
 });
@@ -52,11 +53,10 @@ router.get('/clientes/create', (req, res) => {
 
 // Acción de guardar el cliente (POST)
 router.post('/clientes/guardar', async (req, res) => {
-    console.log(req.body)
-    const { telegramId, name } = req.body;
+    const { telegramId, name, update } = req.body;
     
     try {
-        await registrarCliente(telegramId, name);
+        await registrarCliente({telegramId, name, update});
         res.json({ success: true, message: 'Cliente registrado correctamente' });
     } catch (error) {
         res.status(400).json({ success: false, message: "Error al guardar el cliente: " + error.message });

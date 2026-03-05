@@ -1,5 +1,6 @@
-const { leerSheet } = require('../leerSheet');
+const { leerSheet, sheetLookUp } = require('../leerSheet');
 const { consultarCuenta, pagarCuenta } = require('./telegram');
+const { insertarProducto } = require('../db/setup-db');
 
 const botActions = {
 
@@ -19,7 +20,7 @@ const botActions = {
         const message = "👋 ¡Hola! Soy el sistema de gestión de DespenCast.\n\n" +
                         "Usa el menú de comandos o los botones para navegar.";
         // Comandos del bot
-        bot.setMyCommands(Actions.menuConfig);
+        bot.setMyCommands(botActions.menuConfig, { scope: { type: 'chat', chat_id: chatId } });
         bot.sendMessage(chatId, message);
     },
 
@@ -65,6 +66,10 @@ const botActions = {
             let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
             const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
             const { text: productData } = productSheetDataRaw[0][0];
+
+            const toTitleCase = (str) => {
+                return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            };
             
             const productName = toTitleCase(productData.split(':')[0]);
             const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace(/\./g, ''));
