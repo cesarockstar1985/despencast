@@ -58,11 +58,6 @@ bot.on('photo', async (msg) => {
 // --- Manejo de Callbacks (Calendario y Botones) ---
 bot.on('callback_query', (query) => withAuth(query.message, () => Actions.handleCallback(bot, query)));
 
-// --- Utilidades ---
-const toTitleCase = (str) => {
-    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-};
-
 console.log('🤖 Bot de productos iniciado con éxito...');
 
 module.exports = bot;

@@ -1,5 +1,5 @@
 const { leerSheet, sheetLookUp } = require('../leerSheet');
-const { consultarCuenta, pagarCuenta, busquedaPorRango } = require('./telegram');
+const { consultarCuenta, busquedaPorRango } = require('./telegram');
 const { insertarProducto } = require('../db/setup-db');
 
 const botActions = {

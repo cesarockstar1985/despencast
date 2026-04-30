@@ -42,7 +42,7 @@ const consultarCuenta = (msg, bot, dateObject = {}) => {
 
     if (productos.length > 0) {
       productos.forEach((producto, indice) => {
-        const { nombre, precio, fecha, pagado} = producto;
+        const { nombre, precio, fecha } = producto;
         
         // Formato para la fila de la grilla
         const numero = String(indice + 1).padEnd(5);
@@ -68,7 +68,7 @@ const consultarCuenta = (msg, bot, dateObject = {}) => {
 const pagarCuenta = async (msg, bot) => {
   const userId = msg.chat.id;
 
-  pagarCuentaDb(userId, (error, result) => {
+  pagarCuentaDb(userId, (error, _result) => {
     if(error)
     {
         console.error("Hubo un error:", error.message);

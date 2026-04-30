@@ -47,7 +47,7 @@ const decodeBarcode = async (imageBuffer) => {
             if (config.invert) luminanceSource.invert();
             const bitmap = new BinaryBitmap(new config.binarizer(luminanceSource));
             return reader.decode(bitmap, hints).getText();
-        } catch (e) { /* continuar al siguiente intento */ }
+        } catch (_error) { /* continuar al siguiente intento */ }
     }
     throw new Error('NOT_FOUND');
 }

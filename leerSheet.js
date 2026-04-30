@@ -16,7 +16,7 @@ if (!SPREADSHEET_ID) {
 let credentials;
 try {
   credentials = JSON.parse(GOOGLE_JSON_CONTENT);
-} catch (error) {
+} catch (_error) {
   throw new Error('GOOGLE_JSON_CONTENT tiene formato JSON inválido');
 }
 

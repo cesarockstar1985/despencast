@@ -14,6 +14,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "eslint": "^10.2.1",
     "nodemon": "^3.1.10"
   },
   "name": "despencast",
@@ -24,8 +25,10 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "seed:admin": "node seed-admin.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "check": "node --check index.js && node --check bot.js"
+    "test": "node --test",
+    "check": "node --check index.js && node --check bot.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "author": "Cesar Peralta",
   "license": "ISC"

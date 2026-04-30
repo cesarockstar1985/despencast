@@ -4,7 +4,7 @@ require('dotenv').config();
 const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
-const bot = require('./bot');
+require('./bot');
 const webRoutes = require('./routes/web');
 const path = require('path');
 
