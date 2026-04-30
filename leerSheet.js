@@ -5,7 +5,20 @@ require('dotenv').config();
 const { GOOGLE_JSON_CONTENT, SPREADSHEET_ID } = process.env
 const RANGO = 'Hoja 1!A1:C67';
 
-const credentials = JSON.parse(GOOGLE_JSON_CONTENT);
+if (!GOOGLE_JSON_CONTENT) {
+  throw new Error('GOOGLE_JSON_CONTENT no está configurada');
+}
+
+if (!SPREADSHEET_ID) {
+  throw new Error('SPREADSHEET_ID no está configurada');
+}
+
+let credentials;
+try {
+  credentials = JSON.parse(GOOGLE_JSON_CONTENT);
+} catch (error) {
+  throw new Error('GOOGLE_JSON_CONTENT tiene formato JSON inválido');
+}
 
 const authCredentials = {
     credentials,

@@ -1,5 +1,5 @@
 const { leerSheet, sheetLookUp } = require('../leerSheet');
-const { consultarCuenta, pagarCuenta } = require('./telegram');
+const { consultarCuenta, pagarCuenta, busquedaPorRango } = require('./telegram');
 const { insertarProducto } = require('../db/setup-db');
 
 const botActions = {
@@ -60,6 +60,10 @@ const botActions = {
 
         if (data === 'estado_cuenta') {
             consultarCuenta(msg, bot);
+        }
+
+        if (data === 'rango_cuenta') {
+            busquedaPorRango(msg, bot);
         }
 
         if (data.includes('insertar_producto_')) {

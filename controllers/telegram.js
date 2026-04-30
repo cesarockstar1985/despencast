@@ -79,17 +79,13 @@ const pagarCuenta = async (msg, bot) => {
   });
 }
 
-const busquedaPorRango = async (msg, bot, buscarPagados = false) => {
+const busquedaPorRango = async (msg, bot) => {
   const chatId = msg.chat.id;
-  // Reiniciamos la selección para este usuario
-  userSelections[chatId] = { start: null, end: null };
-  
-  const today = new Date();
-  bot.sendMessage(chatId, 'Selecciona la fecha de **inicio**:', {
-    ...createRangeCalendar(today, buscarPagados),
-    parse_mode: 'Markdown'
-  });
-}
+  await bot.sendMessage(
+    chatId,
+    '📅 La consulta por rango está en construcción. Usa /cuenta para ver tu saldo actual.'
+  );
+};
 
 module.exports = {
   start,

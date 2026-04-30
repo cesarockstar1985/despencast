@@ -3,58 +3,37 @@ const authController = require('../controllers/auth');
 // routes/web.js
 const express = require('express');
 const router = express.Router();
+const { getPendingOrders, getClientsWithDebt } = require('../db/adminQueries');
 const { registrarCliente } = require('../controllers/clients');
-const { consultarCuentaDb } = require('../db/setup-db'); 
-const { auth } = require('googleapis/build/src/apis/abusiveexperiencereport');
 
 router.get('/login', authController.showLogin);
 router.post('/login', authController.processLogin);
 router.get('/logout', authController.logout);
 
-router.get('/', authMiddleware, (req, res) => {
-    // Aquí puedes crear una consulta general en setup-db 
-    // o usar la lógica que ya tenemos para listar deudores
-    // Por ahora, simulamos la llamada:
-    const sqlite3 = require('sqlite3').verbose();
-    const path = require('path');
-    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
-        ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
-        : path.resolve(__dirname, '../db/despensa.db');
-    
-    const db = new sqlite3.Database(dbPath);
+router.use(authMiddleware);
 
-    db.all(`SELECT * FROM pedidos p left join clientes c on p.cliente_id = c.telegram_id WHERE p.pagado = 0`, [], (err, rows) => {
-        if (err) return res.status(500).send("Error en DB");
+router.get('/', (req, res) => {
+    getPendingOrders((err, rows) => {
+        if (err) {
+            console.error('Error al cargar pedidos:', err.message);
+            return res.status(500).send("Error interno del servidor");
+        }
         const total = rows.reduce((sum, r) => sum + r.precio_pedido, 0);
-        console.log(rows)
         res.render('index.ejs', { pedidos: rows, totalDeuda: total });
     });
 });
 
-router.get('/clientes', authMiddleware, (req, res) => {
-    const sqlite3 = require('sqlite3').verbose();
-    const path = require('path');
-    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
-        ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'despensa.db') 
-        : path.resolve(__dirname, '../db/despensa.db');
-    
-    const db = new sqlite3.Database(dbPath);
-
-    // Consultamos los clientes y, de paso, cuánto debe cada uno (opcional pero pro)
-    const query = `
-        SELECT c.*, IFNULL(SUM(CASE WHEN p.pagado = 0 THEN p.precio_pedido ELSE 0 END), 0) as deuda_actual
-        FROM clientes c
-        LEFT JOIN pedidos p ON c.telegram_id = p.cliente_id
-        GROUP BY c.telegram_id
-    `;
-
-    db.all(query, [], (err, rows) => {
-        if (err) return res.status(500).send("Error al cargar clientes");
+router.get('/clientes', (req, res) => {
+    getClientsWithDebt((err, rows) => {
+        if (err) {
+            console.error('Error al cargar clientes:', err.message);
+            return res.status(500).send("Error interno del servidor");
+        }
         res.render('clients.ejs', { clientes: rows });
     });
 });
 
-router.get('/clientes/create', authMiddleware, (req, res) => {
+router.get('/clientes/create', (req, res) => {
     res.render('new-client.ejs');
 });
 
@@ -66,7 +45,8 @@ router.post('/clientes/guardar', async (req, res) => {
         await registrarCliente({telegramId, name, update});
         res.json({ success: true, message: 'Cliente registrado correctamente' });
     } catch (error) {
-        res.status(400).json({ success: false, message: "Error al guardar el cliente: " + error.message });
+        console.error('Error al guardar cliente:', error.message);
+        res.status(400).json({ success: false, message: "Error al guardar el cliente" });
     }
 });
 

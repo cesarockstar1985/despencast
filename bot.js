@@ -1,4 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
+const axios = require('axios');
 const Actions = require('./controllers/botActions');
 const { consultarCuenta, pagarCuenta } = require('./controllers/telegram');
 const { leerSheet } = require('./leerSheet');
@@ -38,9 +39,11 @@ bot.on('photo', async (msg) => {
         try {
             const photo = msg.photo[msg.photo.length - 1];
             const fileLink = await bot.getFileLink(photo.file_id);
+            const imageResponse = await axios.get(fileLink, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(imageResponse.data);
             
             bot.sendMessage(msg.chat.id, '🔍 Procesando...');
-            const code = await decodeBarcode(fileLink);
+            const code = await decodeBarcode(imageBuffer);
             
             waitingForBarcode.delete(msg.chat.id);
             bot.sendMessage(msg.chat.id, `✅ Código: \`${code}\``, { parse_mode: 'Markdown' });

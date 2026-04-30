@@ -1,6 +1,9 @@
 // index.js
+require('dotenv').config();
+
+const crypto = require('crypto');
 const express = require('express');
-const session = require('express-session'); // 1. Importar el paquete
+const session = require('express-session');
 const bot = require('./bot');
 const webRoutes = require('./routes/web');
 const path = require('path');
@@ -15,14 +18,30 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const isProduction = process.env.NODE_ENV === 'production';
+const sessionSecret = process.env.SESSION_SECRET;
+
+if (isProduction && !sessionSecret) {
+    throw new Error('SESSION_SECRET is required in production');
+}
+
+const effectiveSessionSecret =
+    sessionSecret || crypto.randomBytes(32).toString('hex');
+
+if (!sessionSecret) {
+    console.warn('SESSION_SECRET is not set; using ephemeral secret for this process');
+}
+
 // 3. Configuración de express-session
 app.use(session({
-    secret: 'clave-secreta-despencast', // Una frase única para encriptar la cookie
-    resave: false,                  // No guarda la sesión si no hubo cambios
-    saveUninitialized: false,       // No crea una sesión hasta que guardes algo
-    cookie: { 
-        maxAge: 1000 * 60 * 60 * 24, // La sesión durará 24 horas
-        secure: false                // Poner en true solo si usas HTTPS (Railway lo da, pero para test local mejor false)
+    secret: effectiveSessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24,
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: 'lax'
     }
 }));
 
