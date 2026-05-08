@@ -1,6 +1,7 @@
 const { leerSheet, sheetLookUp } = require('../leerSheet');
 const { consultarCuenta, busquedaPorRango } = require('./telegram');
 const { insertarProducto } = require('../db/setup-db');
+const logger = require('../utils/logger');
 
 const botActions = {
 
@@ -54,39 +55,49 @@ const botActions = {
 
         bot.answerCallbackQuery(query.id);
 
-        if (data === 'productos_precios') {
-            leerSheet(bot, msg, {searchTerm: '', isBarcode: false});
+        try {
+            if (data === 'productos_precios') {
+                await leerSheet(bot, msg, {searchTerm: '', isBarcode: false});
+            }
+
+            if (data === 'estado_cuenta') {
+                await consultarCuenta(msg, bot);
+            }
+
+            if (data === 'rango_cuenta') {
+                await busquedaPorRango(msg, bot);
+            }
+
+            if (data.includes('insertar_producto_')) {
+                let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
+                const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
+
+                if (!productSheetDataRaw || productSheetDataRaw.length === 0 || !productSheetDataRaw[0][0]) {
+                    return bot.sendMessage(chatId, '❌ No se encontró el producto. Intenta de nuevo.');
+                }
+
+                const { text: productData } = productSheetDataRaw[0][0];
+
+                const toTitleCase = (str) => {
+                    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                };
+
+                const productName = toTitleCase(productData.split(':')[0]);
+                const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace(/\./g, ''));
+
+                await insertarProducto({
+                    nombre: productName,
+                    precio: productPrice,
+                    fecha: new Date().toISOString(),
+                    cliente: chatId
+                });
+
+                bot.sendMessage(chatId, `✅ Registrado: ${productName}`);
+            }
+        } catch (error) {
+            logger.error('Error en handleCallback: ' + error.message);
+            bot.sendMessage(chatId, '❌ Error técnico. Por favor, intenta más tarde.');
         }
-
-        if (data === 'estado_cuenta') {
-            consultarCuenta(msg, bot);
-        }
-
-        if (data === 'rango_cuenta') {
-            busquedaPorRango(msg, bot);
-        }
-
-        if (data.includes('insertar_producto_')) {
-            let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
-            const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
-            const { text: productData } = productSheetDataRaw[0][0];
-
-            const toTitleCase = (str) => {
-                return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-            };
-            
-            const productName = toTitleCase(productData.split(':')[0]);
-            const productPrice = parseInt(productData.split(':')[1].replace('Gs', '').replace(/\./g, ''));
-            
-            insertarProducto({
-                nombre: productName,
-                precio: productPrice,
-                fecha: new Date().toISOString(),
-                cliente: chatId
-            });
-
-            bot.sendMessage(chatId, `✅ Registrado: ${productName}`);
-        } 
     }
 };
 

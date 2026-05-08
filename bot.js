@@ -1,5 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const logger = require('./utils/logger');
 const Actions = require('./controllers/botActions');
 const { consultarCuenta, pagarCuenta } = require('./controllers/telegram');
 const { leerSheet } = require('./leerSheet');
@@ -58,6 +59,6 @@ bot.on('photo', async (msg) => {
 // --- Manejo de Callbacks (Calendario y Botones) ---
 bot.on('callback_query', (query) => withAuth(query.message, () => Actions.handleCallback(bot, query)));
 
-console.log('🤖 Bot de productos iniciado con éxito...');
+logger.info('Bot de Telegram iniciado.');
 
 module.exports = bot;

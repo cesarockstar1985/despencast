@@ -1,5 +1,6 @@
 const Admin = require('../models/Admin');
-const bcrypt = require('bcrypt'); // 1. Importamos la librería
+const bcrypt = require('bcrypt');
+const logger = require('../utils/logger');
 
 exports.showLogin = (req, res) => {
     res.render('login', { error: null });
@@ -27,14 +28,14 @@ exports.processLogin = async (req, res) => {
         res.render('login', { error: 'Usuario o contraseña incorrectos' });
 
     } catch (error) {
-        console.error("Error en el login:", error);
+        logger.error('Error en processLogin: ' + error.message);
         res.status(500).send("Error interno en el servidor");
     }
 };
 
 exports.logout = (req, res) => {
     req.session.destroy((err) => {
-        if (err) console.error("Error al cerrar sesión:", err);
+        if (err) logger.error('Error al cerrar sesión: ' + err.message);
         res.clearCookie('connect.sid'); // Limpiamos la cookie del navegador
         res.redirect('/login');
     });

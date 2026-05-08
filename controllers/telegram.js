@@ -1,4 +1,5 @@
 const { consultarCuentaDb, pagarCuentaDb } = require('../db/setup-db');
+const logger = require('../utils/logger');
 
 const start = (msg, bot) => {
   const chatId = msg.chat.id;
@@ -24,18 +25,12 @@ const start = (msg, bot) => {
   bot.sendMessage(chatId, texto, opciones);
 };
 
-const consultarCuenta = (msg, bot, dateObject = {}) => {
+const consultarCuenta = async (msg, bot, dateObject = {}) => {
   const userId = msg.chat.id;
-  consultarCuentaDb(userId, dateObject, (error, filas) => {
-    if (error) {
-      console.error("Hubo un error:", error.message);
-      return;
-    }
+  try {
+    const { total, productos } = await consultarCuentaDb(userId, dateObject);
 
-    const { total, productos } = filas;
     let text = '*Detalle de cuenta*\n\n';
-
-    // Encabezados de la grilla
     text += '```\n';
     text += 'Nro.  Fecha         Producto         Precio\n';
     text += '----------------------------------------------\n';
@@ -43,40 +38,34 @@ const consultarCuenta = (msg, bot, dateObject = {}) => {
     if (productos.length > 0) {
       productos.forEach((producto, indice) => {
         const { nombre, precio, fecha } = producto;
-        
-        // Formato para la fila de la grilla
         const numero = String(indice + 1).padEnd(5);
         const productoNombre = nombre.padEnd(15).substring(0, 15);
         const productoPrecio = 'Gs. ' + String(precio);
-
         text += `${numero} ${fecha}    ${productoNombre}  ${productoPrecio.padStart(8)}\n`;
       });
     }
 
     text += '```';
-
-    if (total !== null) {
-      text += `\n*El total de la cuenta es: Gs. ${total}*`;
-    } else {
-      text += 'No tienes cuenta pendiente';
-    }
+    text += total !== null
+      ? `\n*El total de la cuenta es: Gs. ${total}*`
+      : 'No tienes cuenta pendiente';
 
     bot.sendMessage(userId, text, { parse_mode: 'Markdown' });
-  });
+  } catch (error) {
+    logger.error('Error en consultarCuenta: ' + error.message);
+    bot.sendMessage(userId, '❌ Error al consultar tu cuenta. Intenta más tarde.');
+  }
 };
 
 const pagarCuenta = async (msg, bot) => {
   const userId = msg.chat.id;
-
-  pagarCuentaDb(userId, (error, _result) => {
-    if(error)
-    {
-        console.error("Hubo un error:", error.message);
-        return;
-    }
-
-    bot.sendMessage(userId, 'El pago se ha realizado correctamente.')
-  });
+  try {
+    await pagarCuentaDb(userId);
+    bot.sendMessage(userId, 'El pago se ha realizado correctamente.');
+  } catch (error) {
+    logger.error('Error en pagarCuenta: ' + error.message);
+    bot.sendMessage(userId, '❌ Error al registrar el pago. Intenta más tarde.');
+  }
 }
 
 const busquedaPorRango = async (msg, bot) => {

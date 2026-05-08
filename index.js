@@ -1,8 +1,8 @@
-// index.js
 require('dotenv').config();
 
 const crypto = require('crypto');
 const express = require('express');
+const logger = require('./utils/logger');
 const session = require('express-session');
 require('./bot');
 const webRoutes = require('./routes/web');
@@ -29,7 +29,7 @@ const effectiveSessionSecret =
     sessionSecret || crypto.randomBytes(32).toString('hex');
 
 if (!sessionSecret) {
-    console.warn('SESSION_SECRET is not set; using ephemeral secret for this process');
+    logger.warn('SESSION_SECRET no configurada; usando secret efímero para este proceso');
 }
 
 // 3. Configuración de express-session
@@ -50,7 +50,5 @@ app.use('/', webRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Sistema Híbrido Iniciado`);
-    console.log(`🌐 Dashboard: Puerto ${PORT}`);
-    console.log(`🤖 Bot de Telegram: Activo y escuchando`);
+    logger.info(`Sistema iniciado — Dashboard en puerto ${PORT}`);
 });

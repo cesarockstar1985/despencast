@@ -1,6 +1,7 @@
 require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const logger = require('../utils/logger');
 
 // Determinamos la ruta (Local vs Railway)
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
@@ -8,8 +9,8 @@ const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
     : path.resolve(__dirname, 'despensa.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) return console.error('❌ Error al abrir DB:', err.message);
-    console.log(`✅ Base de datos conectada en: ${dbPath}`);
+    if (err) return logger.error('Error al abrir DB: ' + err.message);
+    logger.info(`Base de datos conectada en: ${dbPath}`);
 });
 
 db.serialize(() => {

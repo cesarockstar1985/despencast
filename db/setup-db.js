@@ -1,6 +1,7 @@
-require('dotenv').config(); // Carga las variables de tu .env local
+require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const logger = require('../utils/logger');
 
 // El archivo de la base de datos. Se creará si no existe.
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
@@ -8,8 +9,8 @@ const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
     : path.resolve(__dirname, 'despensa.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) return console.error('Error al abrir la base de datos:', err.message);
-    console.log(`✅ Base de datos conectada en: ${dbPath}`);
+    if (err) return logger.error('Error al abrir la base de datos: ' + err.message);
+    logger.info(`Base de datos conectada en: ${dbPath}`);
 });
 
 // db.serialize() asegura que los comandos se ejecuten en orden.
@@ -24,91 +25,75 @@ db.serialize(() => {
         cliente_id INTEGER NOT NULL,
         pagado INTEGER NOT NULL DEFAULT 0 CHECK(pagado IN (0, 1))
     )`, (err) => {
-        if (err) {
-            return console.error('Error al crear la tabla de pedidos:', err.message);
-        }
-        console.log('📄 Tabla "pedidos" creada o ya existente.');
+        if (err) return logger.error('Error al crear la tabla de pedidos: ' + err.message);
+        logger.info('Tabla "pedidos" lista.');
     });
 
     db.run(`CREATE TABLE IF NOT EXISTS clientes (
-        telegram_id TEXT PRIMARY KEY, -- Su ID de Telegram para reconocerlo
+        telegram_id TEXT PRIMARY KEY,
         nombre_completo TEXT,
-        alias TEXT,                   -- Por si le dicen "Juanchi"
-        limite_credito REAL DEFAULT 200000, 
+        alias TEXT,
+        limite_credito REAL DEFAULT 200000,
         fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
     )`, (err) => {
-        if (err) {
-            return console.error('Error al crear la tabla de usuarios:', err.message);
-        }
-        console.log('📄 Tabla "usuarios" creada o ya existente.');
+        if (err) return logger.error('Error al crear la tabla de clientes: ' + err.message);
+        logger.info('Tabla "clientes" lista.');
     });
 });
 
-const insertarProducto = (producto, callback) => {
-    db.run(
-        `INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id, pagado) VALUES (?, ?, ?, ?, 0)`,
-        [producto.nombre, producto.precio, producto.fecha, producto.cliente],
-        function(err) { // Usamos function() para poder usar this.lastID si quisieras
-            if (err) {
-                console.error('Error al insertar el producto:', err.message);
-                if (callback) callback(err);
-                return;
+const insertarProducto = (producto) => {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT INTO pedidos (nombre_producto, precio_pedido, fecha_pedido, cliente_id, pagado) VALUES (?, ?, ?, ?, 0)`,
+            [producto.nombre, producto.precio, producto.fecha, producto.cliente],
+            function(err) {
+                if (err) return reject(err);
+                resolve(this.lastID);
             }
-            console.log('✅ Producto insertado correctamente.');
-            if (callback) callback(null, true);
-        }
-    );
+        );
+    });
 };
 
-const consultarCuentaDb = (cliente, dateObj = {}, callback) => {
-    // Consulta para el resumen (suma total)
+const consultarCuentaDb = (cliente, dateObj = {}) => {
+    const dateFilter = !isEmpty(dateObj) ? ' AND fecha_pedido BETWEEN ? AND ? ' : '';
+
     const totalQuery = `SELECT
                             COALESCE(SUM(precio_pedido), 0) as total
                         FROM pedidos
-                        WHERE cliente_id = ? AND pagado = 0 ${!isEmpty(dateObj)
-                            ? ' AND fecha_pedido BETWEEN ? AND ? '
-                            : ''}`;
+                        WHERE cliente_id = ? AND pagado = 0 ${dateFilter}`;
 
-    // Consulta para los detalles de los productos
     const detailQuery = `SELECT
                             nombre_producto as nombre,
                             precio_pedido as precio,
                             strftime('%d/%m/%Y', fecha_pedido, '-3 hours') as fecha,
                             pagado
                         FROM pedidos
-                        WHERE cliente_id = ? AND pagado = 0 ${!isEmpty(dateObj)
-                            ? ' AND fecha_pedido BETWEEN ? AND ? '
-                            : ''}`;
+                        WHERE cliente_id = ? AND pagado = 0 ${dateFilter}`;
 
-    let totalWhereVals = [cliente];
-    let detailWhereVals = [cliente];
-
+    let whereVals = [cliente];
     if (!isEmpty(dateObj)) {
         const start = dateObj.start.replace(' ', 'T');
         const end = dateObj.end.replace(' ', 'T');
-        totalWhereVals.push(start, end);
-        detailWhereVals.push(start, end);
+        whereVals.push(start, end);
     }
 
-    // Ejecutar la primera consulta (resumen)
-    db.all(totalQuery, totalWhereVals, (err, totalRow) => {
-        if (err) {
-            return callback(err, null);
-        }
-
-        // Ejecutar la segunda consulta (detalles)
-        db.all(detailQuery, detailWhereVals, (err, detailRows) => {
-            if (err) {
-                return callback(err, null);
-            }
-
-            // Combinar los resultados en un objeto
-            const result = {
-                total: totalRow[0].total,
-                productos: detailRows
-            };
-
-            callback(null, result);
+    return new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.run('BEGIN');
+            db.all(totalQuery, whereVals, (err, totalRow) => {
+                if (err) {
+                    db.run('ROLLBACK');
+                    return reject(err);
+                }
+                db.all(detailQuery, whereVals, (err, detailRows) => {
+                    if (err) {
+                        db.run('ROLLBACK');
+                        return reject(err);
+                    }
+                    db.run('COMMIT');
+                    resolve({ total: totalRow[0].total, productos: detailRows });
+                });
+            });
         });
     });
 };
@@ -123,14 +108,13 @@ const obtenerCliente = (telegram_id) => {
     });
 }
 
-const pagarCuentaDb = (cliente, callback) => {
-    db.run(`UPDATE pedidos SET pagado = 1 WHERE cliente_id = ?`,
-        [cliente], (err) => {
-            if (err) {
-                return callback(err, null)
-            }
-            callback(null, true)
+const pagarCuentaDb = (cliente) => {
+    return new Promise((resolve, reject) => {
+        db.run(`UPDATE pedidos SET pagado = 1 WHERE cliente_id = ?`, [cliente], (err) => {
+            if (err) return reject(err);
+            resolve(true);
         });
+    });
 }
 
 

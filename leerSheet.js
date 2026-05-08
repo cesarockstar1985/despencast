@@ -1,9 +1,14 @@
 const { google } = require('googleapis');
+const logger = require('./utils/logger');
 
 require('dotenv').config();
 
-const { GOOGLE_JSON_CONTENT, SPREADSHEET_ID } = process.env
-const RANGO = 'Hoja 1!A1:C67';
+const { GOOGLE_JSON_CONTENT, SPREADSHEET_ID, SHEET_RANGE } = process.env
+const RANGO = SHEET_RANGE || 'Hoja 1!A1:C67';
+
+if (!SHEET_RANGE) {
+  logger.warn('SHEET_RANGE no está configurada; usando rango por defecto: ' + RANGO);
+}
 
 if (!GOOGLE_JSON_CONTENT) {
   throw new Error('GOOGLE_JSON_CONTENT no está configurada');
@@ -34,13 +39,12 @@ const leerSheet = async (bot, msg, options = {}) => {
   const chatId = msg.chat.id;
   const { searchTerm } = options;
 
-  console.log('Iniciando proceso...');
+  logger.debug('Iniciando leerSheet...');
   try {
 
     const formattedRows = await sheetLookUp(options);
-    // const { productArr } = formattedRows;
 
-    console.log('Datos leídos correctamente.');
+    logger.debug('Datos leídos correctamente.');
 
     const opciones = {
         reply_markup: {
@@ -52,19 +56,17 @@ const leerSheet = async (bot, msg, options = {}) => {
       // Formatea los datos para el mensaje
       let mensaje = '🔔 **Productos** 🔔\n\n';
 
-      console.log('Enviando notificación a Telegram...');
-     
+      logger.debug('Enviando catálogo a Telegram...');
       await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
-      
+
     } else {
       await bot.sendMessage(chatId, `No se encontró el producto ${searchTerm || ''}`);
-      console.log('No se encontraron datos en el Sheet.');
+      logger.debug('Sin resultados en el Sheet para: ' + (searchTerm || 'catálogo'));
     }
   } catch (error) {
-    console.error('Hubo un error en el proceso:', error.message);
-    // Opcional: Notificar el error por Telegram
+    logger.error('Error en leerSheet: ' + error.message);
     try {
-      await bot.sendMessage(chatId, `❌ Hubo un error en el bot: ${error.message}`);
+      await bot.sendMessage(chatId, '❌ Hubo un error al procesar la solicitud. Intenta más tarde.');
     } catch (telegramError) {
       console.error('Error al enviar la notificación de error:', telegramError.message);
     }
@@ -80,7 +82,7 @@ const sheetLookUp = async (options = {}) => {
 
     const { searchTerm, isBarcode } = options;
 
-    console.log('Obteniendo datos del Sheet...');
+    logger.debug('Obteniendo datos del Sheet...');
 
     const { data } = await sheets.spreadsheets.values.get(spreadSheetValues);
     const rows = data.values;
@@ -100,14 +102,14 @@ const sheetLookUp = async (options = {}) => {
           const matches = targetValue.includes(search);
 
           if (matches) {
-              console.log(`¡Encontrado!: ${produName} (vía ${searchTerm})`);
+              logger.debug(`Encontrado: ${produName} (vía ${searchTerm})`);
           }
 
           return matches;
       });
 
       // Ahora 'foundProducts' es un Array [] con todas las filas que coincidieron
-      console.log(`Total de coincidencias: ${found.length}`);
+      logger.debug(`Total de coincidencias: ${found.length}`);
       
       if (found) productsToFormat = found;
     } else {
@@ -118,8 +120,8 @@ const sheetLookUp = async (options = {}) => {
 
     return formatRows(productsToFormat);
 
-  }catch (error) {
-    console.error('Hubo un error en el proceso:', error.message);
+  } catch (error) {
+    logger.error('Error en sheetLookUp: ' + error.message);
     return [];
   }
 }
