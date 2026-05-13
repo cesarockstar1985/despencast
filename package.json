@@ -21,8 +21,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js",
+    "dev": "NODE_OPTIONS=--openssl-legacy-provider nodemon index.js",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider node index.js",
     "seed:admin": "node seed-admin.js",
     "test": "node --test",
     "check": "node --check index.js && node --check bot.js",

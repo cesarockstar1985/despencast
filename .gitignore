@@ -3,3 +3,5 @@ node_modules
 despensa.db
 .vscode
 keys.json
+.aiexclude
+.claude

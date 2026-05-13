@@ -1,57 +1,80 @@
-const { Jimp } = require('jimp'); // Asegúrate de tener la v1.x o superior
-const { 
-    MultiFormatReader, 
-    BarcodeFormat, 
-    DecodeHintType, 
-    RGBLuminanceSource, 
-    BinaryBitmap, 
+const { Jimp } = require('jimp');
+const {
+    MultiFormatReader,
+    BarcodeFormat,
+    DecodeHintType,
+    RGBLuminanceSource,
+    BinaryBitmap,
     HybridBinarizer,
-    GlobalHistogramBinarizer 
+    GlobalHistogramBinarizer
 } = require('@zxing/library');
 
-const decodeBarcode = async (imageBuffer) => {
-    const image = await Jimp.read(imageBuffer);        
-    image.resize({ w: 800 }); // Tamaño ideal para balancear velocidad/detalle
-    image.greyscale();
-    image.contrast(0.8);
-    image.normalize();
+const HINTS = new Map([
+    [DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13, BarcodeFormat.EAN_8,
+        BarcodeFormat.CODE_128, BarcodeFormat.UPC_A,
+        BarcodeFormat.QR_CODE, BarcodeFormat.ITF,
+        BarcodeFormat.CODE_39,
+    ]],
+    [DecodeHintType.TRY_HARDER, true],
+]);
 
-    // 3. Preparar datos para ZXing (Extracción manual de luminancia)
-    const width = image.bitmap.width;
-    const height = image.bitmap.height;
-    const data = image.bitmap.data;
-    const lumaBuffer = new Uint8ClampedArray(width * height);
-
+// ITU-R BT.709 — fórmula estándar de luminancia perceptual
+const extractLuma = (image) => {
+    const { width, height, data } = image.bitmap;
+    const luma = new Uint8ClampedArray(width * height);
     for (let i = 0; i < data.length; i += 4) {
-        // Fórmula de luminancia: (R+G+B)/3
-        lumaBuffer[i / 4] = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        luma[i / 4] = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
     }
+    return new RGBLuminanceSource(luma, width, height);
+};
 
-    const luminanceSource = new RGBLuminanceSource(lumaBuffer, width, height);
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-        BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, 
-        BarcodeFormat.CODE_128, BarcodeFormat.UPC_A, BarcodeFormat.QR_CODE
-    ]);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    
-    const reader = new MultiFormatReader();
-    const attempts = [
-        { binarizer: HybridBinarizer, invert: false },
-        { binarizer: GlobalHistogramBinarizer, invert: false },
-        { binarizer: HybridBinarizer, invert: true }
+const tryDecode = (image, reader) => {
+    const source = extractLuma(image);
+    const candidates = [
+        new HybridBinarizer(source),
+        new GlobalHistogramBinarizer(source),
+        new HybridBinarizer(source.invert()),
+        new GlobalHistogramBinarizer(source.invert()),
     ];
 
-    for (const config of attempts) {
+    for (const binarizer of candidates) {
         try {
-            if (config.invert) luminanceSource.invert();
-            const bitmap = new BinaryBitmap(new config.binarizer(luminanceSource));
-            return reader.decode(bitmap, hints).getText();
-        } catch (_error) { /* continuar al siguiente intento */ }
+            return reader.decode(new BinaryBitmap(binarizer), HINTS).getText();
+        } catch (_) {}
     }
-    throw new Error('NOT_FOUND');
-}
-
-module.exports = {
-    decodeBarcode
+    return null;
 };
+
+const decodeBarcode = async (imageBuffer) => {
+    const original = await Jimp.read(imageBuffer);
+    const reader = new MultiFormatReader();
+
+    const configs = [
+        { width: 800,  rotation: 0   },
+        { width: 1200, rotation: 0   },
+        { width: 600,  rotation: 0   },
+        { width: 800,  rotation: 90  },
+        { width: 800,  rotation: 180 },
+        { width: 800,  rotation: 270 },
+        { width: 1200, rotation: 90  },
+        { width: 1200, rotation: 270 },
+    ];
+
+    for (const { width, rotation } of configs) {
+        const img = original.clone();
+        img.resize({ w: width });
+        if (rotation) img.rotate(rotation);
+        img.greyscale();
+        img.convolute([[0, -1, 0], [-1, 5, -1], [0, -1, 0]]);
+        img.contrast(0.6);
+        img.normalize();
+
+        const result = tryDecode(img, reader);
+        if (result) return result;
+    }
+
+    throw new Error('NOT_FOUND');
+};
+
+module.exports = { decodeBarcode };
