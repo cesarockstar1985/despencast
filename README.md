@@ -58,11 +58,25 @@ npm run dev
 3. Abre el panel web en `http://localhost:3000/login`.
 4. Interactua con el bot en Telegram usando los comandos (`/start`, `/catalogo`, `/cuenta`, etc.).
 
+## Comandos del bot
+
+| Comando | Descripcion |
+|---|---|
+| `/start` | Muestra el menu principal |
+| `/barcode` | Indica al usuario que envie una foto con el codigo de barras |
+| `/catalogo` | Lista todos los productos del Google Sheet |
+| `/buscar <nombre>` | Busca un producto por nombre |
+| `/cuenta` | Consulta el estado de cuenta del usuario |
+| `/pagar` | Marca la deuda como pagada |
+
+> **Nota:** No es necesario ejecutar `/barcode` antes de enviar una foto. El bot procesa cualquier imagen recibida y detecta el codigo de barras automaticamente.
+
 ## Flujo funcional
 
 - `index.js` levanta Express y sesiones, y carga rutas web.
 - `bot.js` inicia el bot Telegram en modo polling.
 - `leerSheet.js` consulta Google Sheets para obtener catalogo.
+- `services/barcodeService.js` decodifica codigos de barras a partir de una imagen.
 - SQLite persiste clientes, pedidos y usuarios admin.
 
 ## Seguridad de secretos
@@ -98,7 +112,8 @@ npm run dev
 
 - [x] Hardening inicial de secretos y sesion
 - [x] Proteccion de rutas administrativas
-- [x] Correccion de flujo barcode por buffer
+- [x] Decodificacion de codigos de barras por imagen
+- [x] Fotos procesadas directamente sin necesidad de llamar `/barcode` primero
 - [ ] Implementar consulta de cuenta por rango (en construccion)
 - [ ] Agregar tests automatizados y lint
 
@@ -124,7 +139,7 @@ npm run dev
 - [ ] `SESSION_SECRET` fuerte y unico por entorno
 - [ ] Sin archivos de secretos en repo (`keys.json`, etc.)
 - [ ] Credenciales de Google rotadas y vigentes
-- [ ] Bot responde `/start`, `/catalogo`, `/cuenta`
+- [ ] Bot responde `/start`, `/catalogo`, `/cuenta`, procesa fotos con codigos de barras
 - [ ] Login admin y rutas protegidas funcionando
 - [ ] Lectura de productos desde Google Sheets verificada
 - [ ] Backup/retencion del archivo SQLite definido
