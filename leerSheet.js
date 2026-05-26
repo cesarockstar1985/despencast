@@ -53,11 +53,25 @@ const leerSheet = async (bot, msg, options = {}) => {
     };
 
     if (formattedRows && formattedRows.length) {
-      // Formatea los datos para el mensaje
-      let mensaje = '🔔 **Productos** 🔔\n\n';
+      logger.debug('Enviando resultado a Telegram...');
 
-      logger.debug('Enviando catálogo a Telegram...');
-      await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
+      if (options.isBarcode && formattedRows.length === 1) {
+        const btn = formattedRows[0][0];
+        const [nombre, precio] = btn.text.split(': ');
+        const mensaje = `📦 *Producto encontrado*\n\n*${nombre}*\nPrecio: ${precio}\n\n¿Agregar a tu cuenta?`;
+        await bot.sendMessage(chatId, mensaje, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Confirmar', callback_data: btn.callback_data },
+              { text: '❌ Cancelar', callback_data: 'cancelar_producto' }
+            ]]
+          }
+        });
+      } else {
+        const mensaje = '🔔 **Productos** 🔔\n\n';
+        await bot.sendMessage(chatId, mensaje, { parse_mode: 'Markdown', ...opciones });
+      }
 
     } else {
       await bot.sendMessage(chatId, `No se encontró el producto ${searchTerm || ''}`);

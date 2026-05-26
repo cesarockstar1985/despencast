@@ -66,6 +66,10 @@ const botActions = {
                 await busquedaPorRango(msg, bot);
             }
 
+            if (data === 'cancelar_producto') {
+                return bot.sendMessage(chatId, '❌ Producto no agregado.');
+            }
+
             if (data.includes('insertar_producto_')) {
                 let producto = data.replace('insertar_producto_', '').replaceAll('_', ' ');
                 const productSheetDataRaw = await sheetLookUp({ searchTerm: producto, isBarcode: false });
