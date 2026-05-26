@@ -70,10 +70,16 @@ const pagarCuenta = async (msg, bot) => {
 
 const busquedaPorRango = async (msg, bot) => {
   const chatId = msg.chat.id;
-  await bot.sendMessage(
-    chatId,
-    '📅 La consulta por rango está en construcción. Usa /cuenta para ver tu saldo actual.'
-  );
+  await bot.sendMessage(chatId, '📅 Seleccioná el período:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📅 Esta semana', callback_data: 'rango_semana' }],
+        [{ text: '🗓️ Este mes',    callback_data: 'rango_mes'    }],
+        [{ text: '⏱️ Últimos 7 días',  callback_data: 'rango_7dias'  }],
+        [{ text: '📆 Últimos 30 días', callback_data: 'rango_30dias' }],
+      ]
+    }
+  });
 };
 
 module.exports = {

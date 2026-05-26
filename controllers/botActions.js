@@ -66,6 +66,28 @@ const botActions = {
                 await busquedaPorRango(msg, bot);
             }
 
+            if (data.startsWith('rango_') && data !== 'rango_cuenta') {
+                const now = new Date();
+                const end = now.toISOString();
+                let start;
+
+                if (data === 'rango_semana') {
+                    const day = now.getDay() || 7;
+                    const monday = new Date(now);
+                    monday.setDate(now.getDate() - (day - 1));
+                    monday.setHours(0, 0, 0, 0);
+                    start = monday.toISOString();
+                } else if (data === 'rango_mes') {
+                    start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                } else if (data === 'rango_7dias') {
+                    start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                } else if (data === 'rango_30dias') {
+                    start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                }
+
+                return await consultarCuenta(msg, bot, { start, end });
+            }
+
             if (data === 'cancelar_producto') {
                 return bot.sendMessage(chatId, '❌ Producto no agregado.');
             }
