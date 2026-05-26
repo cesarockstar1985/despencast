@@ -5,6 +5,7 @@ const router = express.Router();
 const { getPendingOrders, getClientsWithDebt } = require('../db/adminQueries');
 const { registrarCliente } = require('../controllers/clients');
 const logger = require('../utils/logger');
+const bot = require('../bot');
 
 router.get('/login', authController.showLogin);
 router.post('/login', authController.processLogin);
@@ -47,6 +48,24 @@ router.post('/clientes/guardar', async (req, res) => {
     } catch (error) {
         logger.error('Error al guardar cliente: ' + error.message);
         res.status(400).json({ success: false, message: "Error al guardar el cliente" });
+    }
+});
+
+router.post('/clientes/:telegramId/notificar', async (req, res) => {
+    const { telegramId } = req.params;
+    const { mensaje } = req.body;
+
+    if (!mensaje || mensaje.trim().length === 0) {
+        return res.status(400).json({ success: false, message: 'El mensaje no puede estar vacío' });
+    }
+
+    try {
+        await bot.sendMessage(telegramId, mensaje.trim());
+        logger.info(`Notificación enviada a cliente ${telegramId}`);
+        res.json({ success: true });
+    } catch (error) {
+        logger.error('Error al notificar cliente: ' + error.message);
+        res.status(500).json({ success: false, message: 'No se pudo enviar el mensaje' });
     }
 });
 

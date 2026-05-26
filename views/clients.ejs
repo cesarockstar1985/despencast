@@ -60,6 +60,13 @@
                                 </td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary">Editar</button>
+                                    <button class="btn btn-sm btn-outline-secondary ms-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalNotificar"
+                                        data-telegram-id="<%= c.telegram_id %>"
+                                        data-nombre="<%= c.nombre_completo %>">
+                                        📩 Notificar
+                                    </button>
                                 </td>
                             </tr>
                             <% }) %>
@@ -71,5 +78,57 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modal Notificar -->
+    <div class="modal fade" id="modalNotificar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enviar mensaje a <span id="modalNombre"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="mensajeTexto" class="form-control" rows="4" placeholder="Escribe el mensaje..."></textarea>
+                    <div id="notificarFeedback" class="mt-2 small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnEnviar">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let telegramIdActivo = null;
+
+        document.getElementById('modalNotificar').addEventListener('show.bs.modal', (e) => {
+            telegramIdActivo = e.relatedTarget.dataset.telegramId;
+            document.getElementById('modalNombre').textContent = e.relatedTarget.dataset.nombre;
+            document.getElementById('mensajeTexto').value = '';
+            document.getElementById('notificarFeedback').textContent = '';
+        });
+
+        document.getElementById('btnEnviar').addEventListener('click', async () => {
+            const mensaje = document.getElementById('mensajeTexto').value;
+            const feedback = document.getElementById('notificarFeedback');
+
+            const res = await fetch(`/clientes/${telegramIdActivo}/notificar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensaje })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                feedback.className = 'mt-2 small text-success';
+                feedback.textContent = '✅ Mensaje enviado.';
+                setTimeout(() => bootstrap.Modal.getInstance(document.getElementById('modalNotificar')).hide(), 1200);
+            } else {
+                feedback.className = 'mt-2 small text-danger';
+                feedback.textContent = '❌ ' + data.message;
+            }
+        });
+    </script>
 </body>
 </html>
