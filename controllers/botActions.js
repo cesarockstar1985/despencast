@@ -8,7 +8,7 @@ const botActions = {
     // Comandos del bot
     menuConfig: [
         { command: 'start', description: 'Menú principal' },
-        { command: 'barcode', description: 'Escanear código de barras' },
+        { command: 'barcode', description: 'Escanear código de barras (luego envía una foto)' },
         { command: 'catalogo', description: 'Ver el catálogo de productos' },
         { command: 'buscar', description: 'Buscar producto por nombre' },
         { command: 'cuenta', description: 'Verificar cuenta' },
@@ -26,10 +26,8 @@ const botActions = {
     },
 
     // Comando /barcode
-    handleBarcodeRequest: (bot, msg, waitingForBarcode) => {
-        const chatId = msg.chat.id;
-        waitingForBarcode.add(chatId);
-        bot.sendMessage(chatId, '📸 Envíame una foto clara del código de barras.');
+    handleBarcodeRequest: (bot, msg) => {
+        bot.sendMessage(msg.chat.id, '📸 Envíame una foto clara del código de barras.');
     },
 
     // Comando /buscar

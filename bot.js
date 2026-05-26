@@ -17,8 +17,6 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, {
     }
 });
 
-const waitingForBarcode = new Set();
-
 // --- Middleware de Seguridad ---
 const withAuth = async (msg, callback) => {
     const cliente = await obtenerCliente(msg.chat.id.toString());
@@ -28,7 +26,7 @@ const withAuth = async (msg, callback) => {
 
 // --- Manejadores de Comandos ---
 bot.onText(/\/start/, (msg) => withAuth(msg, () => Actions.handleStart(bot, msg)));
-bot.onText(/\/barcode/, (msg) => withAuth(msg, () => Actions.handleBarcodeRequest(bot, msg, waitingForBarcode)));
+bot.onText(/\/barcode/, (msg) => withAuth(msg, () => Actions.handleBarcodeRequest(bot, msg)));
 bot.onText(/\/catalogo/, (msg) => withAuth(msg, () => leerSheet(bot, msg)));
 bot.onText(/\/buscar (.+)/, (msg, match) => withAuth(msg, () => Actions.handleSearch(bot, msg, match)));
 bot.onText(/\/cuenta/, (msg) => withAuth(msg, () => consultarCuenta(msg, bot)));
@@ -46,7 +44,6 @@ bot.on('photo', async (msg) => {
             bot.sendMessage(msg.chat.id, '🔍 Procesando...');
             const code = await decodeBarcode(imageBuffer);
             
-            waitingForBarcode.delete(msg.chat.id);
             bot.sendMessage(msg.chat.id, `✅ Código: \`${code}\``, { parse_mode: 'Markdown' });
             leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
 
