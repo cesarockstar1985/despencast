@@ -34,13 +34,28 @@ db.serialize(() => {
         FOREIGN KEY (cliente_id) REFERENCES clientes(telegram_id)
     )`);
 
-    // Dentro de db.serialize() en tu conexion.js
     db.run(`CREATE TABLE IF NOT EXISTS admin_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
-        password TEXT, -- Aquí guardaremos el hash, no texto plano
+        password TEXT,
         role TEXT DEFAULT 'admin'
-    )`);
+    )`, () => {
+        const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (!adminPassword) return;
+
+        const bcrypt = require('bcrypt');
+        db.get('SELECT id FROM admin_users WHERE username = ?', [adminUsername], (err, row) => {
+            if (err || row) return;
+            bcrypt.hash(adminPassword, 10, (err, hash) => {
+                if (err) return logger.error('Error al hashear password del admin: ' + err.message);
+                db.run('INSERT INTO admin_users (username, password) VALUES (?, ?)', [adminUsername, hash], () => {
+                    logger.info(`Admin "${adminUsername}" creado automáticamente.`);
+                });
+            });
+        });
+    });
 });
 
-module.exports = db; // Exportamos solo la conexión
+module.exports = db;
