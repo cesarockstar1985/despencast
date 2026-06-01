@@ -10,6 +10,8 @@ const path = require('path');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // ... Configuración de Vistas (EJS) ...
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
