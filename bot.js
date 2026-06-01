@@ -47,31 +47,29 @@ bot.on('photo', async (msg) => {
 
             const chatId = msg.chat.id;
             const isAdmin = ADMIN_CHAT_ID && chatId.toString() === ADMIN_CHAT_ID.toString();
+            const found = await sheetLookUp({ searchTerm: code, isBarcode: true });
 
-            if (isAdmin) {
-                const found = await sheetLookUp({ searchTerm: code, isBarcode: true });
-                if (found && found.length > 0) {
-                    // Barcode ya existe en la planilla, mostrar producto normalmente
-                    leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
-                } else {
-                    // Barcode no encontrado: ofrecer asignarlo a un producto
-                    pendingBarcodeAssignment.set(chatId.toString(), code);
-                    await bot.sendMessage(chatId,
-                        `⚠️ Código \`${code}\` no encontrado en la planilla.\n\n¿Deseas asignarlo a un producto?`,
-                        {
-                            parse_mode: 'Markdown',
-                            reply_markup: {
-                                inline_keyboard: [[
-                                    { text: '✅ Sí, asignar', callback_data: 'admin_asignar_barcode' },
-                                    { text: '❌ Cancelar', callback_data: 'cancelar_producto' },
-                                ]]
-                            }
-                        }
-                    );
-                }
-            } else {
-                bot.sendMessage(chatId, `✅ Código: \`${code}\``, { parse_mode: 'Markdown' });
+            if (found && found.length > 0) {
                 leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
+            } else if (isAdmin) {
+                pendingBarcodeAssignment.set(chatId.toString(), code);
+                await bot.sendMessage(chatId,
+                    `⚠️ Código \`${code}\` no encontrado en la planilla.\n\n¿Deseas asignarlo a un producto?`,
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [[
+                                { text: '✅ Sí, asignar', callback_data: 'admin_asignar_barcode' },
+                                { text: '❌ Cancelar', callback_data: 'cancelar_producto' },
+                            ]]
+                        }
+                    }
+                );
+            } else {
+                await bot.sendMessage(chatId,
+                    `❌ Código \`${code}\` no registrado en la planilla.`,
+                    { parse_mode: 'Markdown' }
+                );
             }
 
         } catch (error) {
