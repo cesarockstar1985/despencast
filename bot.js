@@ -49,9 +49,7 @@ bot.on('photo', async (msg) => {
             const isAdmin = ADMIN_CHAT_ID && chatId.toString() === ADMIN_CHAT_ID.toString();
             const found = await sheetLookUp({ searchTerm: code, isBarcode: true });
 
-            if (found && found.length > 0) {
-                leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
-            } else if (isAdmin) {
+            if (isAdmin && (!found || found.length === 0)) {
                 pendingBarcodeAssignment.set(chatId.toString(), code);
                 await bot.sendMessage(chatId,
                     `⚠️ Código \`${code}\` no encontrado en la planilla.\n\n¿Deseas asignarlo a un producto?`,
@@ -65,11 +63,17 @@ bot.on('photo', async (msg) => {
                         }
                     }
                 );
-            } else {
+            }
+
+            if(!isAdmin && (!found || found.length === 0)){
                 await bot.sendMessage(chatId,
-                    `❌ Código \`${code}\` no registrado en la planilla.`,
+                    `❌ Producto no registrado en la planilla.`,
                     { parse_mode: 'Markdown' }
                 );
+            }
+
+            if (found && found.length > 0) {
+                leerSheet(bot, msg, { searchTerm: code, isBarcode: true });
             }
 
         } catch (error) {

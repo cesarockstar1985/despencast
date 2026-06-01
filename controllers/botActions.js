@@ -121,11 +121,8 @@ const botActions = {
                 await writeBarcode(productKey, pendingCode);
                 pendingBarcodeAssignment.delete(chatId.toString());
 
-                const productLabel = productKey.replace(/_/g, ' ');
-                return bot.sendMessage(chatId,
-                    `✅ Código \`${pendingCode}\` asignado a *${productLabel}* en la planilla.`,
-                    { parse_mode: 'Markdown' }
-                );
+                await bot.sendMessage(chatId, `✅ Código asignado en la planilla.`);
+                await leerSheet(bot, msg, { searchTerm: pendingCode, isBarcode: true });
             }
 
             if (data.includes('insertar_producto_')) {
