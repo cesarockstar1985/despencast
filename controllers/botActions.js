@@ -1,6 +1,7 @@
-const { leerSheet, sheetLookUp } = require('../leerSheet');
+const { leerSheet, sheetLookUp, writeBarcode } = require('../leerSheet');
 const { consultarCuenta, busquedaPorRango } = require('./telegram');
 const { insertarProducto } = require('../db/setup-db');
+const { pendingBarcodeAssignment } = require('../services/adminState');
 const logger = require('../utils/logger');
 
 const botActions = {
@@ -89,7 +90,42 @@ const botActions = {
             }
 
             if (data === 'cancelar_producto') {
+                pendingBarcodeAssignment.delete(chatId.toString());
                 return bot.sendMessage(chatId, '❌ Producto no agregado.');
+            }
+
+            if (data === 'admin_asignar_barcode') {
+                const allProducts = await sheetLookUp({});
+                if (!allProducts || allProducts.length === 0) {
+                    return bot.sendMessage(chatId, '❌ No se pudieron cargar los productos de la planilla.');
+                }
+                const keyboard = allProducts.map(row => {
+                    const btn = row[0];
+                    const productKey = btn.callback_data.replace('insertar_producto_', '');
+                    const productLabel = btn.text.split(':')[0].trim();
+                    return [{ text: productLabel, callback_data: `admin_prod_${productKey}` }];
+                });
+                return bot.sendMessage(chatId, '📋 Seleccioná el producto al que querés asignar el código:', {
+                    reply_markup: { inline_keyboard: keyboard },
+                });
+            }
+
+            if (data.startsWith('admin_prod_')) {
+                const productKey = data.replace('admin_prod_', '');
+                const pendingCode = pendingBarcodeAssignment.get(chatId.toString());
+
+                if (!pendingCode) {
+                    return bot.sendMessage(chatId, '❌ No hay código pendiente. Escaneá un código de barras primero.');
+                }
+
+                await writeBarcode(productKey, pendingCode);
+                pendingBarcodeAssignment.delete(chatId.toString());
+
+                const productLabel = productKey.replace(/_/g, ' ');
+                return bot.sendMessage(chatId,
+                    `✅ Código \`${pendingCode}\` asignado a *${productLabel}* en la planilla.`,
+                    { parse_mode: 'Markdown' }
+                );
             }
 
             if (data.includes('insertar_producto_')) {

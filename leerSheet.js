@@ -27,7 +27,7 @@ try {
 
 const authCredentials = {
     credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 };
 
  const spreadSheetValues = {
@@ -152,7 +152,33 @@ const formatSingleRow = (row) => {
   return [{ text, callback_data }];
 }
 
+const writeBarcode = async (productNormalizedName, barcodeCode) => {
+  const auth = new google.auth.GoogleAuth(authCredentials);
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const { data } = await sheets.spreadsheets.values.get(spreadSheetValues);
+  const rows = data.values;
+
+  const rowIndex = rows.findIndex(row => {
+    if (!row[0]) return false;
+    return row[0].toLowerCase().replace(/\s+/g, '_').replace(/'/g, '') === productNormalizedName;
+  });
+
+  if (rowIndex === -1) throw new Error('PRODUCT_NOT_FOUND');
+
+  const sheetRowNumber = rowIndex + 1;
+  const range = `Hoja 1!C${sheetRowNumber}`;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[barcodeCode]] },
+  });
+};
+
 module.exports = {
   leerSheet,
-  sheetLookUp
+  sheetLookUp,
+  writeBarcode,
 };
